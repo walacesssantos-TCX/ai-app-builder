@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 #[derive(Deserialize)]
@@ -36,22 +37,37 @@ fn is_newer(local: &str, current: &str) -> bool {
     lv > cv
 }
 
+fn resolve_installer_path(raw: &str) -> String {
+    let without_prefix = raw.trim_start_matches("file:///");
+    let decoded = urlencoding_decode(without_prefix);
+    decoded.replace('/', "\\")
+}
+
+fn urlencoding_decode(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '%' {
+            let hex: String = chars.by_ref().take(2).collect();
+            if let Ok(byte) = u8::from_str_radix(&hex, 16) {
+                result.push(byte as char);
+                continue;
+            }
+        }
+        result.push(c);
+    }
+    result
+}
+
 fn get_default_updater_paths() -> Vec<String> {
     let mut paths = Vec::new();
-
-    // 1. Same directory as the executable
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
             paths.push(exe_dir.join("updater.json").to_string_lossy().to_string());
         }
     }
-
-    // 2. Hardcoded dev path
     paths.push("D:\\Projeto Fluxcodex\\ai-app-builder\\updater.json".into());
-
-    // 3. Working directory
     paths.push("./updater.json".into());
-
     paths
 }
 
@@ -60,7 +76,6 @@ fn get_resource_updater_path(app: &AppHandle) -> Option<String> {
         .path()
         .resolve("updater.json", tauri::path::BaseDirectory::Resource)
         .ok()?;
-
     Some(path.to_string_lossy().to_string())
 }
 
@@ -93,11 +108,7 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
             .ok_or_else(|| "No windows platform entry in updater.json".to_string())?;
 
         let entry = &manifest.platforms[win_key];
-
-        let installer_path = entry
-            .url
-            .trim_start_matches("file:///")
-            .to_string();
+        let installer_path = resolve_installer_path(&entry.url);
 
         return Ok(Some(LocalUpdateInfo {
             version: manifest.version,
@@ -111,14 +122,18 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
 
 #[tauri::command]
 pub fn install_update(path: String) -> Result<(), String> {
-    let installer_path = path.trim_start_matches("file:///").to_string();
+    let installer_path = resolve_installer_path(&path);
+
+    let p = PathBuf::from(&installer_path);
+    if !p.exists() {
+        return Err(format!("Instalador não encontrado: {}", installer_path));
+    }
 
     std::process::Command::new(&installer_path)
-        .args(["/S", "/RUN"]) // NSIS: silent + launch after install
+        .args(["/S", "/RUN"])
         .spawn()
         .map_err(|e| format!("Falha ao iniciar instalador: {}", e))?;
 
-    // Exit immediately — the installer runs independently and will launch the new version
     std::process::exit(0);
 }
 

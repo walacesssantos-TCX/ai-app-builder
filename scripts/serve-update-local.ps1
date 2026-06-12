@@ -2,7 +2,7 @@
 # Gera updater.json com assinatura e serve via HTTP local
 
 $projectRoot = "D:\Projeto Fluxcodex\ai-app-builder"
-$installer = "$projectRoot\src-tauri\target\release\bundle\nsis\AI App Builder Studio_0.1.0_x64-setup.exe"
+$installer = "$projectRoot\src-tauri\target\release\bundle\nsis\AI App Builder Studio_0.1.13_x64-setup.exe"
 $keyFile = "$env:USERPROFILE\.tauri\ai-updater.key"
 $updaterJson = "$projectRoot\updater.json"
 $port = 3002

@@ -1,7 +1,7 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.12** — última atualização: `2026-06-12T00:00:00Z`
+**v0.1.13** — última atualização: `2026-06-12T13:39:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
@@ -78,6 +78,17 @@
 3. Sandbox avançado: jail de filesystem por diretório temporário, bloqueio de rede por processo
 4. Plugin marketplace: download e instalação de plugins remotos via GitHub
 5. Editor visual de ferramentas para skills (criar/modificar `tools` no frontmatter sem editar YAML)
+
+### Atualizações e Pipeline de Update (v0.1.13)
+- **Code Review completo** no pipeline de update, 3 bugs corrigidos:
+  - `generate-updater.ps1`: installer path hardcoded como `0.1.0` — nunca gerava updater.json correto
+  - `serve-update-local.ps1`: mesmo bug do generate
+  - `updater.rs`: `install_update` agora com `resolve_installer_path()` — trata URL encoding (`%20`), `file:///` prefix, e converte `/` para `\` no Windows. Verifica se o instalador existe antes de spawnar.
+  - `updater.json` atualizado de v0.1.11 → v0.1.13
+- **Bump versão**: `0.1.12` → `0.1.13`
+- **Build assinado** gerado: `AI App Builder Studio_0.1.13_x64-setup.exe` (NSIS + MSI)
+- **updater.json** gerado via script, aponta para installer 0.1.13 no dev path
+- Versão resource no bundle = 0.1.13 (mesmo do app), para não ativar update falso após instalação
 
 ## Comandos úteis
 ```powershell

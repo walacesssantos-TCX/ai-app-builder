@@ -8,7 +8,7 @@ param(
     [string]$ProjectRoot = "D:\Projeto Fluxcodex\ai-app-builder"
 )
 
-$installer = "$ProjectRoot\src-tauri\target\release\bundle\nsis\AI App Builder Studio_0.1.0_x64-setup.exe"
+$installer = "$ProjectRoot\src-tauri\target\release\bundle\nsis\AI App Builder Studio_${NewVersion}_x64-setup.exe"
 
 if (-not (Test-Path $installer)) {
     Write-Error "Installer not found. Run 'npx tauri build' first."
