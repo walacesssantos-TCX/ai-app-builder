@@ -1,11 +1,10 @@
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import { invoke, Channel } from '@tauri-apps/api/core'
 import { useChatStore } from '@/stores/chat.store'
 import { useSettingsStore, isCloudModel } from '@/stores/settings.store'
 import { useSkillsStore } from '@/stores/skills.store'
 
 export function useStream() {
-  const abortRef = useRef<AbortController | null>(null)
   const { setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens } = useChatStore()
 
   const sendMessage = useCallback(async (message: string, mode: string, conversationId: string, projectId: string) => {
@@ -23,8 +22,6 @@ export function useStream() {
     setIsStreaming(true)
     clearStream()
     setAgentRunning(mode === 'agent')
-
-    abortRef.current = new AbortController()
 
     addMessage({
       id: crypto.randomUUID(),
@@ -83,12 +80,11 @@ export function useStream() {
     } finally {
       setIsStreaming(false)
       setAgentRunning(false)
-      abortRef.current = null
     }
   }, [setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens])
 
   const cancel = useCallback(() => {
-    abortRef.current?.abort()
+    invoke('cancel_chat')
   }, [])
 
   return { sendMessage, cancel }

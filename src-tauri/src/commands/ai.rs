@@ -2,12 +2,28 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
 use tauri::Manager;
 use tauri::ipc::Channel;
 
 use super::runner::ToolDef;
+
+static CHAT_CANCELLED: AtomicBool = AtomicBool::new(false);
+
+pub fn is_cancelled() -> bool {
+    CHAT_CANCELLED.load(Ordering::SeqCst)
+}
+
+pub fn reset_cancel() {
+    CHAT_CANCELLED.store(false, Ordering::SeqCst);
+}
+
+#[tauri::command]
+pub fn cancel_chat() {
+    CHAT_CANCELLED.store(true, Ordering::SeqCst);
+}
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -319,9 +335,19 @@ pub async fn chat_completion(
         return Err(format!("Ollama chat failed: {} - {}", status, body));
     }
 
+    reset_cancel();
+
     let mut buffer = Vec::new();
-    while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
-        buffer.extend_from_slice(&chunk);
+    loop {
+        if is_cancelled() {
+            return Ok(());
+        }
+
+        let chunk = response.chunk().await.map_err(|e| e.to_string())?;
+        match chunk {
+            Some(bytes) => buffer.extend_from_slice(&bytes),
+            None => break,
+        }
 
         while let Some(pos) = buffer.iter().position(|&b| b == b'\n') {
             let line_bytes = buffer.drain(..=pos).collect::<Vec<u8>>();

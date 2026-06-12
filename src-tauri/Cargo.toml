@@ -1,6 +1,6 @@
 [package]
 name = "ai-app-builder"
-version = "0.1.13"
+version = "0.1.14"
 description = "AI App Builder Studio - Desktop app for building software via natural language"
 authors = ["Fluxcodex"]
 edition = "2021"

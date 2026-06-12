@@ -18,6 +18,7 @@ pub fn run() {
             terminal::run_command,
             ai::ai_models,
             ai::chat_completion,
+            ai::cancel_chat,
             llm_gateway::cloud_chat_completion,
             llm_gateway::cloud_models,
             skills::discover_skills,

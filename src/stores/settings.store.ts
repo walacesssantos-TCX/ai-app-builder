@@ -72,9 +72,8 @@ export const useSettingsStore = create<SettingsStore>()(
     }),
     {
       name: 'fluxcodex-settings',
-      // Persiste apenas o modelo ativo — chaves de API ficam só em memória por segurança
       partialize: (state) => ({
-        activeModel: isCloudModel(state.activeModel) ? LOCAL_NATIVE_MODEL : state.activeModel,
+        activeModel: state.activeModel,
       }),
     }
   )

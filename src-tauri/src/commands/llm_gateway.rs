@@ -186,15 +186,26 @@ async fn stream_anthropic(
         return Err(format!("Anthropic API {}: {}", status, body));
     }
 
+    super::ai::reset_cancel();
+
     let mut buffer = String::new();
     let mut input_tokens = 0u64;
     let mut output_tokens = 0u64;
 
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(|e| format!("Anthropic stream: {}", e))?
-    {
+    loop {
+        if super::ai::is_cancelled() {
+            return Ok(());
+        }
+
+        let chunk = response
+            .chunk()
+            .await
+            .map_err(|e| format!("Anthropic stream: {}", e))?;
+        let chunk = match chunk {
+            Some(c) => c,
+            None => break,
+        };
+
         if let Ok(text) = String::from_utf8(chunk.to_vec()) {
             buffer.push_str(&text);
             while let Some(pos) = buffer.find('\n') {
@@ -280,15 +291,26 @@ async fn stream_openai_compatible(
         return Err(format!("OpenAI API {}: {}", status, body));
     }
 
+    super::ai::reset_cancel();
+
     let mut buffer = String::new();
     let mut input_tokens = 0u64;
     let mut output_tokens = 0u64;
 
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(|e| format!("OpenAI stream: {}", e))?
-    {
+    loop {
+        if super::ai::is_cancelled() {
+            return Ok(());
+        }
+
+        let chunk = response
+            .chunk()
+            .await
+            .map_err(|e| format!("OpenAI stream: {}", e))?;
+        let chunk = match chunk {
+            Some(c) => c,
+            None => break,
+        };
+
         if let Ok(text) = String::from_utf8(chunk.to_vec()) {
             buffer.push_str(&text);
             while let Some(pos) = buffer.find('\n') {
@@ -370,15 +392,26 @@ async fn stream_gemini(
         return Err(format!("Gemini API {}: {}", status, body));
     }
 
+    super::ai::reset_cancel();
+
     let mut buffer = String::new();
     let mut input_tokens = 0u64;
     let mut output_tokens = 0u64;
 
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(|e| format!("Gemini stream: {}", e))?
-    {
+    loop {
+        if super::ai::is_cancelled() {
+            return Ok(());
+        }
+
+        let chunk = response
+            .chunk()
+            .await
+            .map_err(|e| format!("Gemini stream: {}", e))?;
+        let chunk = match chunk {
+            Some(c) => c,
+            None => break,
+        };
+
         if let Ok(text) = String::from_utf8(chunk.to_vec()) {
             buffer.push_str(&text);
             while let Some(pos) = buffer.find('\n') {
