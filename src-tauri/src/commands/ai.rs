@@ -68,10 +68,10 @@ fn find_resource_path(app: &tauri::AppHandle, relative: &str) -> Option<PathBuf>
 
 fn find_ollama_executable(app: &tauri::AppHandle) -> PathBuf {
     let candidates = [
+        Some(PathBuf::from("C:\\Users\\walace\\AppData\\Local\\Programs\\Ollama\\ollama.exe")),
         find_resource_path(app, "ollama/ollama.exe"),
         find_resource_path(app, "resources/ollama/ollama.exe"),
         Some(PathBuf::from("D:\\Projeto Fluxcodex\\ai-app-builder\\src-tauri\\resources\\ollama\\ollama.exe")),
-        Some(PathBuf::from("C:\\Users\\walace\\AppData\\Local\\Programs\\Ollama\\ollama.exe")),
     ];
 
     for candidate in candidates.into_iter().flatten() {
@@ -314,7 +314,9 @@ pub async fn chat_completion(
         .map_err(|e| e.to_string())?;
 
     if !response.status().is_success() {
-        return Err(format!("Ollama chat failed: {}", response.status()));
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Ollama chat failed: {} - {}", status, body));
     }
 
     let mut buffer = Vec::new();

@@ -5,7 +5,7 @@
                                              "url":  "file:///D:/Projeto Fluxcodex/ai-app-builder/src-tauri/target/release/bundle/nsis/AI App Builder Studio_0.1.13_x64-setup.exe"
                                          }
                   },
-    "pub_date":  "2026-06-12T13:49:01Z",
+    "pub_date":  "2026-06-12T14:26:52Z",
     "version":  "0.1.13",
-    "notes":  "Correcoes de seguranca no sistema de plugins/agentes, revisao de codigo, code review"
+    "notes":  "Correcoes de seguranca no sistema de plugins/agentes, revisao de codigo, BOM fix, Ollama llama-server fix"
 }
