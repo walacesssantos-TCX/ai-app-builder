@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./aibuilder.db"
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  path        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  conversations Conversation[]
+  activeSkills  ProjectSkill[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String?
+  model     String
+  mode      String
+  createdAt DateTime @default(now())
+
+  project  Project   @relation(fields: [projectId], references: [id])
+  messages Message[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  metadata       String?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  provider  String
+  name      String
+  keyHash   String
+  createdAt DateTime @default(now())
+}
+
+model McpServer {
+  id        String   @id @default(cuid())
+  name      String
+  transport String
+  url       String?
+  command   String?
+  args      String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model ProjectSkill {
+  id        String  @id @default(cuid())
+  projectId String
+  skillPath String
+  pinned    Boolean @default(false)
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model UserMemory {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,8 @@
+pub mod filesystem;
+pub mod ai;
+pub mod git;
+pub mod llm_gateway;
+pub mod sidecar;
+pub mod skills;
+pub mod terminal;
+pub mod updater;

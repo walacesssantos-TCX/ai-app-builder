@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Default capability","local":true,"windows":["main"],"permissions":["core:default","shell:allow-open","updater:default","updater:allow-check","updater:allow-download-and-install",{"identifier":"shell:allow-execute","allow":[{"args":true,"cmd":"cmd.exe","name":"cmd"}]},"shell:allow-spawn"]}}
