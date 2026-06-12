@@ -27,6 +27,13 @@ export interface Message {
   createdAt: string
 }
 
+export interface ToolDef {
+  name: string
+  description: string
+  exec: string
+  permissions: string[]
+}
+
 export interface SkillMeta {
   name: string
   description: string
@@ -35,10 +42,19 @@ export interface SkillMeta {
   priority: number
   category?: string
   tags?: string[]
+  tools?: ToolDef[]
 }
 
 export interface Skill extends SkillMeta {
   pinned: boolean
+}
+
+export interface ActiveSkill {
+  name: string
+  description: string
+  content: string
+  priority: number
+  tools: ToolDef[]
 }
 
 export interface OpenFile {

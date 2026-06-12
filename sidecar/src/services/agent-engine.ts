@@ -1,5 +1,13 @@
+import { execSync } from 'child_process'
 import { buildContext, type BuildContextInput } from './context-builder.js'
 import { LLMGateway, type LLMMessage } from './llm-gateway.js'
+
+export interface ToolDef {
+  name: string
+  description: string
+  exec: string
+  permissions: string[]
+}
 
 export interface AgentTool {
   name: string
@@ -35,12 +43,43 @@ interface AgentContext {
   onEvent: (event: AgentEvent) => void
   requestConfirmation: (command: string) => Promise<boolean>
   model?: string
+  customTools?: ToolDef[]
+}
+
+function createCustomTools(toolDefs: ToolDef[]): AgentTool[] {
+  return toolDefs.map(def => ({
+    name: def.name,
+    description: def.description,
+    execute: async (params: Record<string, unknown>) => {
+      const cwd = (params.cwd as string) || '.'
+      const args = Object.entries(params)
+        .filter(([k]) => k !== 'cwd')
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ')
+      const command = `${def.exec} ${args}`
+      try {
+        const output = execSync(command, {
+          encoding: 'utf-8',
+          timeout: 30000,
+          cwd,
+        })
+        return output.slice(0, 5000)
+      } catch (e: unknown) {
+        const err = e as { stdout?: string; stderr?: string; message?: string }
+        return (err.stdout || err.stderr || err.message || 'Tool failed').slice(0, 5000)
+      }
+    },
+  }))
 }
 
 const MAX_ITERATIONS = 50
 
 export async function* runAgent(context: AgentContext): AsyncGenerator<AgentEvent> {
-  const { gateway, tools, input, onEvent, requestConfirmation } = context
+  const { gateway, tools: builtinTools, input, onEvent, requestConfirmation, customTools } = context
+
+  const tools = customTools?.length
+    ? [...builtinTools, ...createCustomTools(customTools)]
+    : builtinTools
 
   const ctx = await buildContext(input)
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = ctx.messages.map(m => ({ role: m.role, content: m.content }))

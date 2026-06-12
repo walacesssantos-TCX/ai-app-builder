@@ -2,11 +2,13 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+use super::runner::ToolDef;
+
 #[derive(Serialize, Deserialize)]
 pub struct SkillFrontmatter {
     pub name: String,
     pub description: String,
-    pub tools: Option<Vec<String>>,
+    pub tools: Option<Vec<ToolDef>>,
     pub priority: Option<i32>,
 }
 
@@ -17,6 +19,7 @@ pub struct SkillMeta {
     pub content: String,
     pub path: String,
     pub priority: i32,
+    pub tools: Vec<ToolDef>,
 }
 
 #[derive(Serialize)]
@@ -27,6 +30,7 @@ pub struct Skill {
     pub path: String,
     pub priority: i32,
     pub pinned: bool,
+    pub tools: Vec<ToolDef>,
 }
 
 pub fn parse_skill_md(path: &str) -> Result<SkillMeta, String> {
@@ -48,6 +52,7 @@ pub fn parse_skill_md(path: &str) -> Result<SkillMeta, String> {
         content: body,
         path: path.to_string(),
         priority: frontmatter.priority.unwrap_or(5),
+        tools: frontmatter.tools.unwrap_or_default(),
     })
 }
 

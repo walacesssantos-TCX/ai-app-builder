@@ -11,6 +11,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/slack-gif-creator.md").to_string(),
             path: "builtin://slack-gif-creator".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "subagent-driven-development".into(),
@@ -18,6 +19,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/subagent-driven-development.md").to_string(),
             path: "builtin://subagent-driven-development".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "requesting-code-review".into(),
@@ -25,6 +27,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/requesting-code-review.md").to_string(),
             path: "builtin://requesting-code-review".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "skill-creator".into(),
@@ -32,6 +35,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/skill-creator.md").to_string(),
             path: "builtin://skill-creator".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "brainstorming".into(),
@@ -39,6 +43,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/brainstorming.md").to_string(),
             path: "builtin://brainstorming".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "finishing-a-development-branch".into(),
@@ -46,6 +51,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/finishing-a-development-branch.md").to_string(),
             path: "builtin://finishing-a-development-branch".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "receiving-code-review".into(),
@@ -53,6 +59,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/receiving-code-review.md").to_string(),
             path: "builtin://receiving-code-review".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "dispatching-parallel-agents".into(),
@@ -60,6 +67,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/dispatching-parallel-agents.md").to_string(),
             path: "builtin://dispatching-parallel-agents".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "executing-plans".into(),
@@ -67,6 +75,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/executing-plans.md").to_string(),
             path: "builtin://executing-plans".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "marketing-strategist".into(),
@@ -74,6 +83,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/marketing-strategist.md").to_string(),
             path: "builtin://marketing-strategist".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "mcp-builder".into(),
@@ -81,6 +91,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/mcp-builder.md").to_string(),
             path: "builtin://mcp-builder".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "intake-strategist".into(),
@@ -88,6 +99,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/intake-strategist.md").to_string(),
             path: "builtin://intake-strategist".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "internal-comms".into(),
@@ -95,6 +107,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/internal-comms.md").to_string(),
             path: "builtin://internal-comms".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "orchestrator-strategy".into(),
@@ -102,6 +115,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/orchestrator-strategy.md").to_string(),
             path: "builtin://orchestrator-strategy".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "pptx".into(),
@@ -109,6 +123,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/pptx.md").to_string(),
             path: "builtin://pptx".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "prompt-engineer".into(),
@@ -116,6 +131,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/prompt-engineer.md").to_string(),
             path: "builtin://prompt-engineer".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "pdf".into(),
@@ -123,6 +139,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/pdf.md").to_string(),
             path: "builtin://pdf".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "post-layout-generator".into(),
@@ -130,6 +147,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/post-layout-generator.md").to_string(),
             path: "builtin://post-layout-generator".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "using-git-worktrees".into(),
@@ -137,6 +155,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/using-git-worktrees.md").to_string(),
             path: "builtin://using-git-worktrees".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "verification-before-completion".into(),
@@ -144,6 +163,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/verification-before-completion.md").to_string(),
             path: "builtin://verification-before-completion".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "test-driven-development".into(),
@@ -151,6 +171,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/test-driven-development.md").to_string(),
             path: "builtin://test-driven-development".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "theme-factory".into(),
@@ -158,6 +179,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/theme-factory.md").to_string(),
             path: "builtin://theme-factory".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "web-artifacts-builder".into(),
@@ -165,6 +187,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/web-artifacts-builder.md").to_string(),
             path: "builtin://web-artifacts-builder".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "writing-skills".into(),
@@ -172,6 +195,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/writing-skills.md").to_string(),
             path: "builtin://writing-skills".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "xlsx".into(),
@@ -179,6 +203,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/xlsx.md").to_string(),
             path: "builtin://xlsx".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "webapp-testing".into(),
@@ -186,6 +211,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/webapp-testing.md").to_string(),
             path: "builtin://webapp-testing".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "writing-plans".into(),
@@ -193,6 +219,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/writing-plans.md").to_string(),
             path: "builtin://writing-plans".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "systematic-debugging".into(),
@@ -200,6 +227,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/systematic-debugging.md").to_string(),
             path: "builtin://systematic-debugging".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "using-superpowers".into(),
@@ -207,6 +235,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/using-superpowers.md").to_string(),
             path: "builtin://using-superpowers".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "impeccable".into(),
@@ -214,6 +243,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/impeccable.md").to_string(),
             path: "builtin://impeccable".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "opensquad-social-networks-publishing".into(),
@@ -221,6 +251,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/opensquad-social-networks-publishing.md").to_string(),
             path: "builtin://opensquad-social-networks-publishing".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "social-posts-framework".into(),
@@ -228,6 +259,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/social-posts-framework.md").to_string(),
             path: "builtin://social-posts-framework".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "opensquad-instagram-feed".into(),
@@ -235,6 +267,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/opensquad-instagram-feed.md").to_string(),
             path: "builtin://opensquad-instagram-feed".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "opensquad-sherlock-instagram".into(),
@@ -242,6 +275,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/opensquad-sherlock-instagram.md").to_string(),
             path: "builtin://opensquad-sherlock-instagram".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "claude-api".into(),
@@ -249,6 +283,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/claude-api.md").to_string(),
             path: "builtin://claude-api".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "claude-automation-recommender".into(),
@@ -256,6 +291,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/claude-automation-recommender.md").to_string(),
             path: "builtin://claude-automation-recommender".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "brand-guidelines".into(),
@@ -263,6 +299,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/brand-guidelines.md").to_string(),
             path: "builtin://brand-guidelines".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "canvas-design".into(),
@@ -270,6 +307,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/canvas-design.md").to_string(),
             path: "builtin://canvas-design".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "opensquad-image-design".into(),
@@ -277,6 +315,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/opensquad-image-design.md").to_string(),
             path: "builtin://opensquad-image-design".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "doc-to-pdf".into(),
@@ -284,6 +323,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/doc-to-pdf.md").to_string(),
             path: "builtin://doc-to-pdf".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "music-extractor".into(),
@@ -291,6 +331,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/music-extractor.md").to_string(),
             path: "builtin://music-extractor".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "audio-instrument-remover".into(),
@@ -298,6 +339,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/audio-instrument-remover.md").to_string(),
             path: "builtin://audio-instrument-remover".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "audio-transcriber".into(),
@@ -305,6 +347,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/audio-transcriber.md").to_string(),
             path: "builtin://audio-transcriber".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "proposal-generator".into(),
@@ -312,6 +355,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/proposal-generator.md").to_string(),
             path: "builtin://proposal-generator".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "algorithmic-art".into(),
@@ -319,6 +363,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/algorithmic-art.md").to_string(),
             path: "builtin://algorithmic-art".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "opensquad-copywriting".into(),
@@ -326,6 +371,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/opensquad-copywriting.md").to_string(),
             path: "builtin://opensquad-copywriting".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "agent-creator".into(),
@@ -333,6 +379,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/agent-creator.md").to_string(),
             path: "builtin://agent-creator".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-implement-design".into(),
@@ -340,6 +387,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-implement-design.md").to_string(),
             path: "builtin://figma-implement-design".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-use".into(),
@@ -347,6 +395,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-use.md").to_string(),
             path: "builtin://figma-use".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-generate-diagram".into(),
@@ -354,6 +403,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-generate-diagram.md").to_string(),
             path: "builtin://figma-generate-diagram".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-generate-library".into(),
@@ -361,6 +411,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-generate-library.md").to_string(),
             path: "builtin://figma-generate-library".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-use-figjam".into(),
@@ -368,6 +419,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-use-figjam.md").to_string(),
             path: "builtin://figma-use-figjam".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "frontend-design".into(),
@@ -375,6 +427,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/frontend-design.md").to_string(),
             path: "builtin://frontend-design".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "generate-project-plan".into(),
@@ -382,6 +435,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/generate-project-plan.md").to_string(),
             path: "builtin://generate-project-plan".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-generate-design".into(),
@@ -389,6 +443,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-generate-design.md").to_string(),
             path: "builtin://figma-generate-design".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "doc-coauthoring".into(),
@@ -396,6 +451,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/doc-coauthoring.md").to_string(),
             path: "builtin://doc-coauthoring".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "claude-md-improver".into(),
@@ -403,6 +459,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/claude-md-improver.md").to_string(),
             path: "builtin://claude-md-improver".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "copywriting".into(),
@@ -410,6 +467,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/copywriting.md").to_string(),
             path: "builtin://copywriting".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "docx".into(),
@@ -417,6 +475,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/docx.md").to_string(),
             path: "builtin://docx".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-create-design-system-rules".into(),
@@ -424,6 +483,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-create-design-system-rules.md").to_string(),
             path: "builtin://figma-create-design-system-rules".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-create-new-file".into(),
@@ -431,6 +491,7 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-create-new-file.md").to_string(),
             path: "builtin://figma-create-new-file".into(),
             priority: 5,
+            tools: vec![],
         },
         SkillMeta {
             name: "figma-code-connect".into(),
@@ -438,6 +499,28 @@ pub fn get_builtin_skills() -> Vec<SkillMeta> {
             content: include_str!("../resources/skills/figma-code-connect.md").to_string(),
             path: "builtin://figma-code-connect".into(),
             priority: 5,
+            tools: vec![],
+        },
+        SkillMeta {
+            name: "example-plugin".into(),
+            description: "Skill de exemplo demonstrando o sistema de plugins com ferramentas customizadas".into(),
+            content: include_str!("../resources/skills/example-plugin.md").to_string(),
+            path: "builtin://example-plugin".into(),
+            priority: 1,
+            tools: vec![
+                crate::commands::runner::ToolDef {
+                    name: "greet".into(),
+                    description: "Saúda um usuário com uma mensagem personalizada".into(),
+                    exec: "echo \"Olá, $TOOL_USERNAME!\"".into(),
+                    permissions: vec![],
+                },
+                crate::commands::runner::ToolDef {
+                    name: "check_disk".into(),
+                    description: "Verifica o espaço em disco disponível".into(),
+                    exec: "wmic logicaldisk get size,freespace,caption".into(),
+                    permissions: vec![],
+                },
+            ],
         },
     ]
 }

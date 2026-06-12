@@ -2,6 +2,7 @@ pub mod filesystem;
 pub mod ai;
 pub mod git;
 pub mod llm_gateway;
+pub mod runner;
 pub mod sidecar;
 pub mod skills;
 pub mod terminal;

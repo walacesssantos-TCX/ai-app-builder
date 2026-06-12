@@ -7,6 +7,8 @@ use std::time::Duration;
 use tauri::Manager;
 use tauri::ipc::Channel;
 
+use super::runner::ToolDef;
+
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
@@ -31,6 +33,7 @@ pub struct ActiveSkill {
     pub description: String,
     pub content: String,
     pub priority: i32,
+    pub tools: Vec<ToolDef>,
 }
 
 #[derive(Deserialize)]

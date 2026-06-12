@@ -6,13 +6,21 @@ import { join } from 'path'
 import { LLMGateway } from '../services/llm-gateway.js'
 import { buildContext } from '../services/context-builder.js'
 import { runAgent } from '../services/agent-engine.js'
-import type { AgentTool } from '../services/agent-engine.js'
+import type { AgentTool, ToolDef } from '../services/agent-engine.js'
+
+const toolDefSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  exec: z.string(),
+  permissions: z.array(z.string()),
+})
 
 const activeSkillSchema = z.object({
   name: z.string(),
   description: z.string(),
   content: z.string(),
   priority: z.number(),
+  tools: z.array(toolDefSchema).optional(),
 })
 
 const chatSchema = z.object({
@@ -149,9 +157,13 @@ export function registerChatRoutes(fastify: FastifyInstance, gateway: LLMGateway
       if (mode === 'agent') {
         const tools = createTools(projectId ? undefined : undefined)
 
+        const customTools: ToolDef[] = (activeSkills || [])
+          .flatMap(s => s.tools || [])
+
         for await (const event of runAgent({
           gateway,
           tools,
+          customTools: customTools.length > 0 ? customTools : undefined,
           input: {
             message,
             history: [],

@@ -1,7 +1,7 @@
 mod commands;
 mod skills_data;
 
-use commands::{ai, filesystem, llm_gateway, terminal, skills, git, sidecar, updater};
+use commands::{ai, filesystem, llm_gateway, runner, terminal, skills, git, sidecar, updater};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,6 +33,7 @@ pub fn run() {
             updater::check_local_update,
             updater::install_update,
             updater::get_app_version,
+            runner::run_tool,
         ])
         .setup(|_app| {
             std::thread::spawn(|| {

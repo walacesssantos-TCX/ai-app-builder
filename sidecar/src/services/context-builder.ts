@@ -1,10 +1,18 @@
 import { isRtkAvailable, compressText, trackSaved } from './rtk.js'
 
+interface ToolDef {
+  name: string
+  description: string
+  exec: string
+  permissions: string[]
+}
+
 interface Skill {
   name: string
   description: string
   content: string
   priority: number
+  tools?: ToolDef[]
 }
 
 interface Project {
@@ -170,6 +178,15 @@ export async function buildContext(input: BuildContextInput): Promise<BuildConte
         }
       }
       systemPrompt += `\n\n---\n## Skill Ativa: ${skill.name}\n${content}`
+
+      // Inject tool definitions if the skill has tools
+      if (skill.tools && skill.tools.length > 0) {
+        systemPrompt += `\n\n### Ferramentas da Skill "${skill.name}"\n`
+        for (const tool of skill.tools) {
+          systemPrompt += `- \`${tool.name}\`: ${tool.description}\n`
+        }
+        systemPrompt += `\nUse <tool_use>tags XML para chamar estas ferramentas.\n`
+      }
     }
   }
 

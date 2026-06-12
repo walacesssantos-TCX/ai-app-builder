@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Key, Brain, Boxes, RefreshCw } from 'lucide-react'
+import { Key, Brain, Boxes, Puzzle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApiKeysSection } from './ApiKeysSection'
 import { ModelsSection } from './ModelsSection'
 import { McpServersSection } from './McpServersSection'
+import { PluginManager } from './PluginManager'
 import { UpdateSection } from './UpdateSection'
 import { useSettingsStore } from '@/stores/settings.store'
 import { invoke } from '@tauri-apps/api/core'
@@ -11,6 +12,7 @@ import { invoke } from '@tauri-apps/api/core'
 const tabs = [
   { id: 'api-keys', icon: Key, label: 'API Keys' },
   { id: 'models', icon: Brain, label: 'Modelos' },
+  { id: 'plugins', icon: Puzzle, label: 'Plugins' },
   { id: 'mcp', icon: Boxes, label: 'MCP Servers' },
   { id: 'update', icon: RefreshCw, label: 'Atualizar' },
 ]
@@ -53,6 +55,7 @@ export function SettingsPanel() {
         {activeTab === 'models' && (
           <ModelsSection activeModel={activeModel} onModelChange={setActiveModel} />
         )}
+        {activeTab === 'plugins' && <PluginManager />}
         {activeTab === 'mcp' && <McpServersSection />}
         {activeTab === 'update' && <UpdateSection />}
       </div>

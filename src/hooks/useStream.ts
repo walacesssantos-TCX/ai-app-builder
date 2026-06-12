@@ -17,6 +17,7 @@ export function useStream() {
       description: s.description,
       content: s.content,
       priority: s.priority,
+      tools: s.tools || [],
     }))
 
     setIsStreaming(true)
