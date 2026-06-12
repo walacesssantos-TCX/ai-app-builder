@@ -43,6 +43,10 @@ fn resolve_installer_path(raw: &str) -> String {
     decoded.replace('/', "\\")
 }
 
+fn strip_bom(s: &str) -> &str {
+    if s.starts_with('\u{feff}') { &s[3..] } else { s }
+}
+
 fn urlencoding_decode(s: &str) -> String {
     let mut result = String::with_capacity(s.len());
     let mut chars = s.chars();
@@ -94,8 +98,9 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
         }
 
         let content = fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+        let content = strip_bom(&content);
         let manifest: UpdaterManifest =
-            serde_json::from_str(&content).map_err(|e| format!("Invalid updater.json: {}", e))?;
+            serde_json::from_str(content).map_err(|e| format!("Invalid updater.json: {}", e))?;
 
         if !is_newer(&manifest.version, current_version) {
             continue;

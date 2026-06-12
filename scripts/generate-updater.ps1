@@ -27,7 +27,7 @@ $json = @{
     }
 } | ConvertTo-Json -Depth 10
 
-$json | Out-File -LiteralPath "$ProjectRoot\updater.json" -Encoding UTF8
+[System.IO.File]::WriteAllText("$ProjectRoot\updater.json", $json, [System.Text.UTF8Encoding]::new($false))
 
 Write-Output "updater.json generated: version $NewVersion"
 Write-Output "Path: $ProjectRoot\updater.json"
