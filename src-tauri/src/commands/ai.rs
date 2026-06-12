@@ -292,6 +292,8 @@ pub async fn chat_completion(
     request: ChatRequest,
     on_event: Channel<ChatStreamEvent>,
 ) -> Result<(), String> {
+    reset_cancel();
+
     let mode = request.mode.unwrap_or_else(|| "chat".into());
     let model = request.model.unwrap_or_else(|| LOCAL_MODEL_NAME.into());
     let active_skills = request.active_skills.unwrap_or_default();
@@ -307,8 +309,15 @@ pub async fn chat_completion(
 
     ensure_native_model(&app).await?;
 
+    if is_cancelled() {
+        return Ok(());
+    }
+
     let host = get_ollama_host();
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
     let mut response = client
         .post(format!("{host}/api/chat"))
         .json(&serde_json::json!({
@@ -335,7 +344,9 @@ pub async fn chat_completion(
         return Err(format!("Ollama chat failed: {} - {}", status, body));
     }
 
-    reset_cancel();
+    if is_cancelled() {
+        return Ok(());
+    }
 
     let mut buffer = Vec::new();
     loop {

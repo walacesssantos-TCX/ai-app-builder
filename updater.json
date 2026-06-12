@@ -1,11 +1,11 @@
 {
-  "version": "0.1.14",
-  "notes": "Correcoes: BOM fix, llama-server, stop button funcional, modelos cloud",
-  "pub_date": "2026-06-12T14:30:00Z",
+  "version": "0.1.15",
+  "notes": "Correcoes: stop button durante setup, timeout reqwest 60s, cloud models cancel",
+  "pub_date": "2026-06-12T15:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "file:///D:/Projeto Fluxcodex/ai-app-builder/src-tauri/target/release/bundle/nsis/AI App Builder Studio_0.1.14_x64-setup.exe"
+      "url": "file:///D:/Projeto Fluxcodex/ai-app-builder/src-tauri/target/release/bundle/nsis/AI App Builder Studio_0.1.15_x64-setup.exe"
     }
   }
 }

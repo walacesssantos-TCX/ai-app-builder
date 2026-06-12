@@ -163,7 +163,10 @@ async fn stream_anthropic(
     system_prompt: &str,
     on_event: &Channel<ChatStreamEvent>,
 ) -> Result<(), String> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .build()
+        .map_err(|e| format!("Client build: {}", e))?;
     let mut response = client
         .post("https://api.anthropic.com/v1/messages")
         .header("Content-Type", "application/json")
@@ -266,7 +269,10 @@ async fn stream_openai_compatible(
     system_prompt: &str,
     on_event: &Channel<ChatStreamEvent>,
 ) -> Result<(), String> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .build()
+        .map_err(|e| format!("Client build: {}", e))?;
     let mut response = client
         .post(format!("{}/chat/completions", base_url))
         .header("Content-Type", "application/json")
@@ -368,7 +374,10 @@ async fn stream_gemini(
     system_prompt: &str,
     on_event: &Channel<ChatStreamEvent>,
 ) -> Result<(), String> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .build()
+        .map_err(|e| format!("Client build: {}", e))?;
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?key={}",
         model, api_key
@@ -471,6 +480,8 @@ pub async fn cloud_chat_completion(
     request: CloudChatRequest,
     on_event: Channel<ChatStreamEvent>,
 ) -> Result<(), String> {
+    super::ai::reset_cancel();
+
     let mode = request.mode.unwrap_or_else(|| "chat".into());
     let model = request.model;
     let active_skills = request.active_skills.unwrap_or_default();
@@ -485,6 +496,10 @@ pub async fn cloud_chat_completion(
             provider_name
         )
     })?;
+
+    if super::ai::is_cancelled() {
+        return Ok(());
+    }
 
     match provider_name {
         "anthropic" => stream_anthropic(api_key, &model, &request.message, &system_prompt, &on_event).await,
