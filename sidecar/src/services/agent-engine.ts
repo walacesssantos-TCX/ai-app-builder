@@ -51,17 +51,18 @@ function createCustomTools(toolDefs: ToolDef[]): AgentTool[] {
     name: def.name,
     description: def.description,
     execute: async (params: Record<string, unknown>) => {
-      const cwd = (params.cwd as string) || '.'
-      const args = Object.entries(params)
+      const cwd = (params.cwd as string) || process.cwd()
+      const envPrefix = Object.entries(params)
         .filter(([k]) => k !== 'cwd')
-        .map(([k, v]) => `${k}=${v}`)
-        .join(' ')
-      const command = `${def.exec} ${args}`
+        .map(([k, v]) => `set "TOOL_${k.toUpperCase()}=${String(v ?? '')}" &&`)
+        .join('')
+      const command = `${envPrefix} ${def.exec}`
       try {
         const output = execSync(command, {
           encoding: 'utf-8',
           timeout: 30000,
           cwd,
+          shell: 'cmd.exe',
         })
         return output.slice(0, 5000)
       } catch (e: unknown) {
