@@ -17,7 +17,7 @@ const updateSchema = z.object({
   key: z.string().min(1).optional(),
 })
 
-export function registerApiKeyRoutes(fastify: FastifyInstance): void {
+export function registerApiKeyRoutes(fastify: FastifyInstance, gateway: any, reloadGateway: () => Promise<void>): void {
   fastify.get('/api-keys', async () => {
     const keys = await prisma.apiKey.findMany({ orderBy: { createdAt: 'desc' } })
     return keys.map(k => ({
@@ -39,6 +39,7 @@ export function registerApiKeyRoutes(fastify: FastifyInstance): void {
         keyHash,
       },
     })
+    await reloadGateway()
     reply.code(201)
     return {
       id: apiKey.id,
@@ -56,6 +57,7 @@ export function registerApiKeyRoutes(fastify: FastifyInstance): void {
     if (parsed.name) data.name = parsed.name
     if (parsed.key) data.keyHash = encryptKey(parsed.key)
     const updated = await prisma.apiKey.update({ where: { id }, data })
+    await reloadGateway()
     return {
       id: updated.id,
       provider: updated.provider,
@@ -67,6 +69,7 @@ export function registerApiKeyRoutes(fastify: FastifyInstance): void {
   fastify.delete('/api-keys/:id', async (req, reply) => {
     const { id } = req.params as { id: string }
     await prisma.apiKey.delete({ where: { id } })
+    await reloadGateway()
     reply.code(204)
     return
   })

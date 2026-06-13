@@ -40,7 +40,6 @@
       "../sidecar/dist/**/*",
       "../sidecar/node_modules/**/*",
       "../sidecar/prisma/**/*",
-      "../sidecar/.env",
       "../sidecar/package.json",
       "resources/node/**/*"
     ]

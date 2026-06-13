@@ -87,7 +87,7 @@ async function main() {
 
   const dbKeys = await loadKeysFromDb()
 
-  const gateway = createGateway({
+  let gateway = createGateway({
     anthropic: process.env.ANTHROPIC_API_KEY || dbKeys.anthropic || '',
     openai: process.env.OPENAI_API_KEY || dbKeys.openai || '',
     openrouter: process.env.OPENROUTER_API_KEY || dbKeys.openrouter || '',
@@ -98,8 +98,22 @@ async function main() {
     cohere: process.env.COHERE_API_KEY || dbKeys.cohere || '',
   })
 
+  const reloadGateway = async () => {
+    const fresh = await loadKeysFromDb()
+    gateway = createGateway({
+      anthropic: fresh.anthropic || '',
+      openai: fresh.openai || '',
+      openrouter: fresh.openrouter || '',
+      groq: fresh.groq || '',
+      gemini: fresh.gemini || '',
+      deepseek: fresh.deepseek || '',
+      mistral: fresh.mistral || '',
+      cohere: fresh.cohere || '',
+    })
+  }
+
   registerChatRoutes(fastify, gateway)
-  registerApiKeyRoutes(fastify)
+  registerApiKeyRoutes(fastify, gateway, reloadGateway)
   registerProjectRoutes(fastify)
   registerConversationRoutes(fastify)
   registerMcpRoutes(fastify)
