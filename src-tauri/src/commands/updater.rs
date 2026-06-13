@@ -139,7 +139,11 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
         }
 
         let entry = &manifest.platforms[win_key_option.unwrap()];
-        let installer_path = resolve_installer_path(&entry.url);
+        let installer_path = if entry.url.starts_with("http://") || entry.url.starts_with("https://") {
+            entry.url.clone()
+        } else {
+            resolve_installer_path(&entry.url)
+        };
 
         return Ok(Some(LocalUpdateInfo {
             version: manifest.version,
