@@ -240,24 +240,50 @@ pub fn install_update(path: String) -> Result<(), String> {
         return Err(format!("Instalador não encontrado: {}", installer_path));
     }
 
-    // Kill all lingering sidecar/Node processes that may lock files
-    let _ = std::process::Command::new("taskkill")
-        .args(["/f", "/t", "/im", "node.exe"])
+    // Write a cleanup script that runs after this process exits
+    let script_dir = std::env::temp_dir().join("ai-app-builder-update");
+    fs::create_dir_all(&script_dir).ok();
+    let script_path = script_dir.join("install_update.bat");
+
+    let app_data = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\Users\\Default\\AppData\\Local".to_string());
+    let install_dir = format!("{}\\AI App Builder Studio", app_data);
+
+    let script_content = format!(
+        "@echo off\r\n\
+        title Instalando atualizacao...\r\n\
+        echo Fechando processos...\r\n\
+        taskkill /f /t /im node.exe >nul 2>&1\r\n\
+        taskkill /f /t /im ai-app-builder.exe >nul 2>&1\r\n\
+        timeout /t 3 /nobreak >nul\r\n\
+        \r\n\
+        echo Removendo arquivos travados...\r\n\
+        if exist \"{install_dir}\\_up_\\sidecar\\node_modules\\.prisma\" (\r\n\
+          rmdir /s /q \"{install_dir}\\_up_\\sidecar\\node_modules\\.prisma\" >nul 2>&1\r\n\
+        )\r\n\
+        if exist \"{install_dir}\\_up_\" (\r\n\
+          rmdir /s /q \"{install_dir}\\_up_\" >nul 2>&1\r\n\
+        )\r\n\
+        \r\n\
+        echo Instalando...\r\n\
+        start \"\" /wait \"{installer_path}\" /S /RUN\r\n\
+        \r\n\
+        echo Concluido!\r\n\
+        del \"%~f0\" >nul 2>&1\r\n\
+        ",
+        install_dir = install_dir,
+        installer_path = installer_path
+    );
+
+    fs::write(&script_path, &script_content)
+        .map_err(|e| format!("Failed to write update script: {}", e))?;
+
+    // Launch the cleanup script detached from this process
+    std::process::Command::new("cmd")
+        .args(["/c", "start", "/b", "", &script_path.to_string_lossy().to_string()])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
-        .spawn();
-    let _ = std::process::Command::new("taskkill")
-        .args(["/f", "/im", "ai-app-builder.exe"])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn();
-
-    std::thread::sleep(std::time::Duration::from_millis(2000));
-
-    std::process::Command::new(&installer_path)
-        .args(["/S", "/RUN"])
         .spawn()
-        .map_err(|e| format!("Falha ao iniciar instalador: {}", e))?;
+        .map_err(|e| format!("Falha ao iniciar script de atualização: {}", e))?;
 
     std::process::exit(0);
 }
