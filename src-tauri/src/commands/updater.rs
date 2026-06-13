@@ -240,6 +240,20 @@ pub fn install_update(path: String) -> Result<(), String> {
         return Err(format!("Instalador não encontrado: {}", installer_path));
     }
 
+    // Kill all lingering sidecar/Node processes that may lock files
+    let _ = std::process::Command::new("taskkill")
+        .args(["/f", "/t", "/im", "node.exe"])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    let _ = std::process::Command::new("taskkill")
+        .args(["/f", "/im", "ai-app-builder.exe"])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+
+    std::thread::sleep(std::time::Duration::from_millis(2000));
+
     std::process::Command::new(&installer_path)
         .args(["/S", "/RUN"])
         .spawn()
