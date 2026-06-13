@@ -103,10 +103,13 @@ pub fn start_sidecar() -> Result<(), String> {
     node_command.creation_flags(CREATE_NO_WINDOW);
 
     let child = if dist_path.exists() {
-        let env_arg = format!("--env-file={}", env_path.display());
-        let dist = dist_path.to_string_lossy().to_string();
+        let mut args = Vec::new();
+        if env_path.exists() {
+            args.push(format!("--env-file={}", env_path.display()));
+        }
+        args.push(dist_path.to_string_lossy().to_string());
         node_command
-            .args([&env_arg, &dist])
+            .args(&args)
             .current_dir(&sidecar_dir)
             .env("DATABASE_URL", &db_url)
             .stdout(Stdio::null())
@@ -114,15 +117,18 @@ pub fn start_sidecar() -> Result<(), String> {
             .spawn()
             .map_err(|e| format!("Failed to start sidecar (node): {}", e))?
     } else if src_path.exists() {
-        let env_arg = format!("--env-file={}", env_path.display());
-        let src = src_path.to_string_lossy().to_string();
+        let mut args = vec!["tsx".to_string()];
+        if env_path.exists() {
+            args.push(format!("--env-file={}", env_path.display()));
+        }
+        args.push(src_path.to_string_lossy().to_string());
         let mut npx_command = Command::new("npx");
 
         #[cfg(windows)]
         npx_command.creation_flags(CREATE_NO_WINDOW);
 
         npx_command
-            .args(["tsx", &env_arg, &src])
+            .args(&args)
             .current_dir(&sidecar_dir)
             .stdout(Stdio::null())
             .stderr(Stdio::null())

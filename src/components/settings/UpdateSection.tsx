@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Download, CheckCircle, AlertCircle } from 'lucide-react'
+import { RefreshCw, Download, CheckCircle, AlertCircle, RotateCcw } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
+import { relaunch } from '@tauri-apps/plugin-process'
 
 type UpdateState =
   | { status: 'idle' }
   | { status: 'checking' }
   | { status: 'available'; version: string; notes?: string; download: () => Promise<void> }
   | { status: 'downloading'; progress: number }
+  | { status: 'installed' }
   | { status: 'uptodate' }
   | { status: 'error'; message: string }
 
@@ -37,6 +39,7 @@ export function UpdateSection() {
             setState({ status: 'downloading', progress: 0 })
             try {
               await invoke('install_update', { path: local.installer_path })
+              setState({ status: 'installed' })
             } catch (e) {
               setState({ status: 'error', message: `Falha ao instalar: ${e}` })
             }
@@ -106,6 +109,27 @@ export function UpdateSection() {
               Instalando atualização...
             </div>
           </div>
+        )}
+
+        {state.status === 'installed' && (
+          <>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400" />
+              <span className="text-xs font-medium text-zinc-100">
+                Instalação concluída!
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Reinicie o aplicativo para usar a nova versão.
+            </p>
+            <button
+              onClick={() => relaunch()}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-brand hover:bg-brand-600 text-white transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reiniciar agora
+            </button>
+          </>
         )}
 
         {state.status === 'uptodate' && (

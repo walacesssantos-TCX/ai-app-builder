@@ -218,17 +218,16 @@ pub fn install_update(path: String) -> Result<(), String> {
         let resp = client
             .get(&path)
             .send()
-            .map_err(|e| format!("Failed to download: {}", e))?;
+            .map_err(|e| format!("Falha ao baixar atualização: {}", e))?;
 
         let temp_dir = std::env::temp_dir().join("ai-app-builder-update");
-        fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create temp dir: {}", e))?;
+        fs::create_dir_all(&temp_dir).map_err(|e| format!("Falha ao criar diretório temporário: {}", e))?;
 
-        // Extract filename from URL
         let filename = path.rsplit('/').next().unwrap_or("installer.exe");
         let dest = temp_dir.join(filename);
 
-        let bytes = resp.bytes().map_err(|e| format!("Failed to read response: {}", e))?;
-        fs::write(&dest, &bytes).map_err(|e| format!("Failed to write installer: {}", e))?;
+        let bytes = resp.bytes().map_err(|e| format!("Falha ao ler resposta: {}", e))?;
+        fs::write(&dest, &bytes).map_err(|e| format!("Falha ao salvar instalador: {}", e))?;
 
         dest.to_string_lossy().to_string()
     } else {
@@ -240,52 +239,26 @@ pub fn install_update(path: String) -> Result<(), String> {
         return Err(format!("Instalador não encontrado: {}", installer_path));
     }
 
-    // Write a cleanup script that runs after this process exits
-    let script_dir = std::env::temp_dir().join("ai-app-builder-update");
-    fs::create_dir_all(&script_dir).ok();
-    let script_path = script_dir.join("install_update.bat");
-
-    let app_data = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\Users\\Default\\AppData\\Local".to_string());
-    let install_dir = format!("{}\\AI App Builder Studio", app_data);
-
-    let script_content = format!(
-        "@echo off\r\n\
-        title Instalando atualizacao...\r\n\
-        echo Fechando processos...\r\n\
-        taskkill /f /t /im node.exe >nul 2>&1\r\n\
-        taskkill /f /t /im ai-app-builder.exe >nul 2>&1\r\n\
-        timeout /t 3 /nobreak >nul\r\n\
-        \r\n\
-        echo Removendo arquivos travados...\r\n\
-        if exist \"{install_dir}\\_up_\\sidecar\\node_modules\\.prisma\" (\r\n\
-          rmdir /s /q \"{install_dir}\\_up_\\sidecar\\node_modules\\.prisma\" >nul 2>&1\r\n\
-        )\r\n\
-        if exist \"{install_dir}\\_up_\" (\r\n\
-          rmdir /s /q \"{install_dir}\\_up_\" >nul 2>&1\r\n\
-        )\r\n\
-        \r\n\
-        echo Instalando...\r\n\
-        start \"\" /wait \"{installer_path}\" /S /RUN\r\n\
-        \r\n\
-        echo Concluido!\r\n\
-        del \"%~f0\" >nul 2>&1\r\n\
-        ",
-        install_dir = install_dir,
-        installer_path = installer_path
-    );
-
-    fs::write(&script_path, &script_content)
-        .map_err(|e| format!("Failed to write update script: {}", e))?;
-
-    // Launch the cleanup script detached from this process
-    std::process::Command::new("cmd")
-        .args(["/c", "start", "/b", "", &script_path.to_string_lossy().to_string()])
+    // Kill only the sidecar (node.exe) so Prisma engine DLL is unlocked
+    let _ = std::process::Command::new("taskkill")
+        .args(["/f", "/t", "/im", "node.exe"])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
-        .spawn()
-        .map_err(|e| format!("Falha ao iniciar script de atualização: {}", e))?;
+        .spawn();
 
-    std::process::exit(0);
+    std::thread::sleep(std::time::Duration::from_secs(3));
+
+    // Run installer silently (no /RUN — user restarts manually)
+    let status = std::process::Command::new(&installer_path)
+        .args(["/S"])
+        .status()
+        .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
+
+    if !status.success() {
+        return Err(format!("Instalador falhou com código: {:?}", status.code()));
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

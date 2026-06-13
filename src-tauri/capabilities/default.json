@@ -18,6 +18,7 @@
         }
       ]
     },
-    "shell:allow-spawn"
+    "shell:allow-spawn",
+    "process:allow-relaunch"
   ]
 }
