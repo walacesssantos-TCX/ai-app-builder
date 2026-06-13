@@ -42,6 +42,14 @@ export async function readSkill(skillPath: string): Promise<SkillMeta> {
   return invoke('read_skill', { skillPath })
 }
 
+export async function gitBranches(path: string): Promise<string[]> {
+  return invoke('git_branches', { path })
+}
+
+export async function getHwid(): Promise<string> {
+  return invoke('get_hwid')
+}
+
 export async function openFileDialog(): Promise<string | null> {
   return invoke('open_file_dialog')
 }

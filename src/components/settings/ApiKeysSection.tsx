@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Key, Plus, Trash2, Eye, EyeOff } from 'lucide-react'
 import { api, type ApiKeyDto } from '@/lib/api'
 
-const PROVIDERS = ['anthropic', 'openai', 'openrouter', 'groq', 'gemini', 'deepseek', 'mistral'] as const
+const PROVIDERS = ['anthropic', 'openai', 'openrouter', 'groq', 'gemini', 'deepseek', 'mistral', 'cohere'] as const
 
 export function ApiKeysSection() {
   const [keys, setKeys] = useState<ApiKeyDto[]>([])
@@ -46,7 +46,7 @@ export function ApiKeysSection() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-100 flex items-center gap-2">
-          <Key className="w-4 h-4 text-blue-400" /> API Keys
+          <Key className="w-4 h-4 text-gold-400" /> API Keys
         </h3>
         <button
           onClick={() => setShowAdd(!showAdd)}
@@ -92,7 +92,7 @@ export function ApiKeysSection() {
             <button
               onClick={handleAdd}
               disabled={!name.trim() || !keyValue.trim()}
-              className="flex-1 px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 transition-colors"
+              className="flex-1 px-3 py-1.5 text-xs rounded-md bg-brand hover:bg-brand-600 text-white disabled:opacity-40 transition-colors"
             >
               Salvar
             </button>
@@ -107,7 +107,7 @@ export function ApiKeysSection() {
       )}
 
       {error && (
-        <div className="text-xs text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg px-3 py-2">{error}</div>
+        <div className="text-xs text-brand-400 bg-brand-900/30 border border-brand-800/30 rounded-lg px-3 py-2">{error}</div>
       )}
 
       {keys.length === 0 && !showAdd ? (
@@ -125,7 +125,7 @@ export function ApiKeysSection() {
               </div>
               <button
                 onClick={() => handleDelete(k.id)}
-                className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-red-400 transition-colors shrink-0"
+                className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-brand-400 transition-colors shrink-0"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

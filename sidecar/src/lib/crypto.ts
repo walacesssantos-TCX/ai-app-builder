@@ -1,12 +1,33 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
+import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto'
 
 const ALGORITHM = 'aes-256-gcm'
-const KEY = Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex')
-// In production, derive from HWID via Rust command
+const SALT = 'fluxcodex-hwid-salt-v1'
+
+function deriveKey(hwid: string): Buffer {
+  return createHash('sha256')
+    .update(hwid + SALT)
+    .digest()
+}
+
+let _key: Buffer | null = null
+
+export function setHwid(hwid: string): void {
+  _key = deriveKey(hwid)
+}
+
+function getKey(): Buffer {
+  if (!_key) {
+    // Fallback for environments without HWID
+    return createHash('sha256')
+      .update('fluxcodex-default-key-fallback' + SALT)
+      .digest()
+  }
+  return _key
+}
 
 export function encryptKey(plaintext: string): string {
   const iv = randomBytes(16)
-  const cipher = createCipheriv(ALGORITHM, KEY, iv)
+  const cipher = createCipheriv(ALGORITHM, getKey(), iv)
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
   const authTag = cipher.getAuthTag()
   return Buffer.concat([iv, authTag, encrypted]).toString('base64')
@@ -17,7 +38,7 @@ export function decryptKey(ciphertext: string): string {
   const iv = data.subarray(0, 16)
   const authTag = data.subarray(16, 32)
   const encrypted = data.subarray(32)
-  const decipher = createDecipheriv(ALGORITHM, KEY, iv)
+  const decipher = createDecipheriv(ALGORITHM, getKey(), iv)
   decipher.setAuthTag(authTag)
   return decipher.update(encrypted).toString('utf8') + decipher.final('utf8')
 }

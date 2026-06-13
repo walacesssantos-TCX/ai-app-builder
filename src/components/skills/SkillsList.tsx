@@ -1,16 +1,20 @@
 import { useState, useMemo } from 'react'
-import { Search, Filter } from 'lucide-react'
+import { Search, Filter, Plus, Pencil } from 'lucide-react'
 import { useSkillsStore } from '@/stores/skills.store'
 import { SkillCard } from './SkillCard'
+import { SkillEditor } from './SkillEditor'
 import { useSkills } from '@/hooks/useSkills'
 import { SKILL_CATEGORIES, searchSkills } from '@/data/builtinSkills'
 import { cn } from '@/lib/utils'
+import type { SkillMeta } from '@/types'
 
 export function SkillsList() {
   const { available } = useSkillsStore()
   const { pinned, togglePin, loadPersistedPins } = useSkills()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('Todas')
+  const [showEditor, setShowEditor] = useState(false)
+  const [editingSkill, setEditingSkill] = useState<SkillMeta | null>(null)
 
   const filtered = useMemo(() => {
     let result = available
@@ -34,12 +38,20 @@ export function SkillsList() {
       <div className="p-4 pb-2 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-100">Skills</h2>
-          <button
-            onClick={loadPersistedPins}
-            className="text-xs text-blue-400 hover:text-blue-300"
-          >
-            Recarregar
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => { setEditingSkill(null); setShowEditor(true) }}
+              className="flex items-center gap-1 text-xs text-gold-400 hover:text-gold-300 px-2 py-1 rounded hover:bg-zinc-800 transition-colors"
+            >
+              <Plus className="w-3 h-3" /> Nova
+            </button>
+            <button
+              onClick={loadPersistedPins}
+              className="text-xs text-gold-400 hover:text-gold-300"
+            >
+              Recarregar
+            </button>
+          </div>
         </div>
 
         <div className="relative">
@@ -85,16 +97,30 @@ export function SkillsList() {
         ) : (
           <div className="grid gap-2">
             {filtered.map((skill) => (
-              <SkillCard
-                key={skill.name}
-                skill={skill}
-                isPinned={pinned.includes(skill.name)}
-                onTogglePin={() => togglePin(skill.name)}
-              />
+              <div key={skill.name} className="relative group">
+                <SkillCard
+                  skill={skill}
+                  isPinned={pinned.includes(skill.name)}
+                  onTogglePin={() => togglePin(skill.name)}
+                />
+                <button
+                  onClick={() => { setEditingSkill(skill); setShowEditor(true) }}
+                  className="absolute top-2 right-10 p-1 rounded text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-all"
+                  title="Editar skill"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      <SkillEditor
+        open={showEditor}
+        onClose={() => { setShowEditor(false); setEditingSkill(null) }}
+        skill={editingSkill}
+      />
     </div>
   )
 }

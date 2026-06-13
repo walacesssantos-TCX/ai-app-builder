@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useChatStore } from '@/stores/chat.store'
 import { MessageBubble } from './MessageBubble'
-import { Loader2, Baseline, Cpu } from 'lucide-react'
+import { Loader2, Baseline, Cpu, Bot } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function MessageList() {
@@ -37,7 +37,7 @@ export function MessageList() {
             Use o botão <strong>+</strong> para adicionar skills, contexto ou uploads.
           </p>
           <p className="text-[10px] text-zinc-700">
-            Digite <code className="text-emerald-500">/compact</code> para alternar modo compacto
+            Digite <code className="text-gold-500">/compact</code> para alternar modo compacto
           </p>
         </div>
       </div>
@@ -51,7 +51,7 @@ export function MessageList() {
           {rtkOn && (
             <span className="flex items-center gap-1 text-[10px] text-emerald-600/60" title={`${rtkSaved} tokens economizados`}>
               <Cpu className="w-3 h-3" /> RTK
-              {rtkSaved > 0 && <span className="text-emerald-500/80">-{rtkSaved}</span>}
+              {rtkSaved > 0 && <span className="text-gold-500/80">-{rtkSaved}</span>}
             </span>
           )}
           <span className="flex items-center gap-1 text-[10px] text-zinc-600">
@@ -70,14 +70,43 @@ export function MessageList() {
             {event.type === 'thinking' && (
               <div className="flex items-center gap-2">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                <span>Pensando...</span>
+                <span>{event.subagent ? `[${event.subagent}] Pensando...` : 'Pensando...'}</span>
               </div>
             )}
             {event.type === 'tool_call' && (
-              <span>🔧 Usando ferramenta: <code className="text-emerald-400">{event.tool}</code></span>
+              <span>{event.subagent ? `[${event.subagent}] ` : ''}🔧 Usando ferramenta: <code className="text-gold-400">{event.tool}</code></span>
             )}
             {event.type === 'tool_result' && (
-              <span>✅ Resultado obtido</span>
+              <span>{event.subagent ? `[${event.subagent}] ` : ''}✅ Resultado obtido</span>
+            )}
+            {event.type === 'subagent_task' && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-violet-400">
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>Delegando para <strong>{event.subagent}</strong>:</span>
+                </div>
+                {event.content && (
+                  <p className="text-zinc-500 mt-1 text-[11px] leading-relaxed">{event.content}</p>
+                )}
+              </div>
+            )}
+            {event.type === 'subagent_event' && (
+              <div className="flex items-center gap-2 text-violet-400/60">
+                <Bot className="w-3 h-3" />
+                <span>[{event.subagent}]</span>
+                {event.tool && <span>🔧 {event.tool}</span>}
+              </div>
+            )}
+            {event.type === 'subagent_result' && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-gold-400">
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>Subagente <strong>{event.subagent}</strong> concluído</span>
+                </div>
+                {event.result && (
+                  <p className="text-zinc-500 mt-1 text-[11px] leading-relaxed whitespace-pre-wrap">{event.result}</p>
+                )}
+              </div>
             )}
           </div>
         </div>

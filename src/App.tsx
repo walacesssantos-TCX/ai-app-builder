@@ -9,12 +9,24 @@ import { SettingsPanel } from '@/components/settings/SettingsPanel'
 import { McpExplorer } from '@/components/editor/McpExplorer'
 import { ExtensionsExplorer } from '@/components/editor/ExtensionsExplorer'
 import { DeployView } from '@/components/editor/DeployView'
+import { ComparePanel } from '@/components/editor/ComparePanel'
+import { MarketplacePanel } from '@/components/editor/MarketplacePanel'
+import { KanbanBoard } from '@/components/kanban/KanbanBoard'
+import { TemplatesPanel } from '@/components/editor/TemplatesPanel'
 import { NetworkIndicator } from '@/components/layout/NetworkIndicator'
 import { useProjectStore } from '@/stores/project.store'
 import { cn } from '@/lib/utils'
 
+const SIDECAR_URL = 'http://127.0.0.1:3001'
+
 function MainContent({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) {
   switch (activeTab) {
+    case 'templates':
+      return <TemplatesPanel />
+    case 'compare':
+      return <ComparePanel />
+    case 'marketplace':
+      return <MarketplacePanel />
     case 'skills':
       return (
         <div className="flex-1 flex flex-col h-full bg-zinc-950 overflow-y-auto">
@@ -27,6 +39,8 @@ function MainContent({ activeTab, onTabChange }: { activeTab: string; onTabChang
       return <ExtensionsExplorer />
     case 'deploys':
       return <DeployView />
+    case 'kanban':
+      return <KanbanBoard />
     case 'settings':
       return <SettingsPanel />
     default:
@@ -42,12 +56,30 @@ export default function App() {
 
   useEffect(() => {
     loadProjects()
+
+    // Initialize HWID for crypto key derivation
+    ;(async () => {
+      try {
+        const { getHwid } = await import('@/lib/tauri')
+        const hwid = await getHwid()
+        await fetch(`${SIDECAR_URL}/hwid`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hwid }),
+        })
+      } catch {
+        // HWID not available (browser mode)
+      }
+    })()
   }, [loadProjects])
 
   const isMainChat = activeTab === 'chat' || activeTab === 'history'
 
   return (
     <div className="h-screen w-screen flex bg-zinc-950 text-zinc-100 overflow-hidden">
+      {/* Brand signature top border */}
+      <div className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand via-gold to-brand z-50" />
+
       <Sidebar activeTab={activeTab} onTabChange={(tab) => {
         setActiveTab(tab)
         if (tab === 'chat' || tab === 'history') setRightPanelOpen(false)

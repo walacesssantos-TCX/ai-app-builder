@@ -1,0 +1,8 @@
+{
+  "id": "react-ts",
+  "name": "React + TypeScript",
+  "description": "Aplicação React com TypeScript, Vite e configuração básica de ESLint",
+  "category": "Frontend",
+  "tags": ["react", "typescript", "vite", "frontend"],
+  "order": 1
+}

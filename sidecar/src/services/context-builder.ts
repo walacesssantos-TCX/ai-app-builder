@@ -1,3 +1,5 @@
+import { readdir, stat, readFile as fsReadFile } from 'fs/promises'
+import { join, relative } from 'path'
 import { isRtkAvailable, compressText, trackSaved } from './rtk.js'
 
 interface ToolDef {
@@ -28,6 +30,7 @@ interface ActiveSkill extends Skill {
 export interface BuildContextInput {
   message: string
   project?: Project
+  projectPath?: string
   history: Array<{ role: string; content: string }>
   activeSkills: ActiveSkill[]
   openFiles?: Array<{ path: string; content: string }>
@@ -159,9 +162,39 @@ Você opera dentro do AI App Builder Studio, um aplicativo desktop nativo constr
 
 8. **Idioma** — Responda em português (brasileiro) por padrão, a menos que o usuário solicite outro idioma.`
 
-export async function buildContext(input: BuildContextInput): Promise<BuildContextOutput> {
+const IGNORE_DIRS = new Set(['node_modules', '.git', '.next', 'dist', 'target', '.vscode', '.idea', '__pycache__', '.cache'])
+const IGNORE_FILES = new Set(['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', '.gitignore'])
+
+async function getFileTree(dirPath: string, maxDepth: number, currentDepth: number = 0): Promise<string> {
+  if (currentDepth > maxDepth) return ''
+
+  let result = ''
+  const entries = await readdir(dirPath, { withFileTypes: true })
+
+  const sorted = entries.sort((a, b) => {
+    if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
+
+  for (const entry of sorted) {
+    if (entry.isDirectory() && IGNORE_DIRS.has(entry.name)) continue
+    if (!entry.isDirectory() && IGNORE_FILES.has(entry.name)) continue
+
+    const prefix = '│   '.repeat(Math.max(0, currentDepth))
+    const connector = entry.isDirectory() ? '📁 ' : '📄 '
+    result += `${prefix}${connector}${entry.name}\n`
+
+    if (entry.isDirectory()) {
+      result += await getFileTree(join(dirPath, entry.name), maxDepth, currentDepth + 1)
+    }
+  }
+
+  return result
+}
+
+export async function buildContext(input: BuildContextInput, basePrompt?: string): Promise<BuildContextOutput> {
   const rtkAvailable = await isRtkAvailable()
-  let systemPrompt = SUPER_DEVELOPER_PROMPT
+  let systemPrompt = basePrompt ?? SUPER_DEVELOPER_PROMPT
 
   // Catálogo de skills nativas
   systemPrompt += `\n\n${BUILTIN_SKILLS_INDEX}`
@@ -193,6 +226,17 @@ export async function buildContext(input: BuildContextInput): Promise<BuildConte
   // Contexto do projeto
   if (input.project) {
     systemPrompt += `\n\n## Projeto Atual\nNome: ${input.project.name}\nCaminho: ${input.project.path}`
+  }
+
+  // File tree (Spec §9 — estrutura do projeto)
+  const projectRoot = input.project?.path || input.projectPath
+  if (projectRoot) {
+    try {
+      const tree = await getFileTree(projectRoot, 3)
+      systemPrompt += `\n\n## Estrutura do Projeto\n\`\`\`\n${projectRoot}\n${tree}\n\`\`\``
+    } catch {
+      // file tree not available
+    }
   }
 
   // Schema do banco

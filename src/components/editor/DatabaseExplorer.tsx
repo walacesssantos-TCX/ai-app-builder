@@ -174,7 +174,7 @@ export function DatabaseExplorer({ projectPath }: { projectPath?: string }) {
           <button
             onClick={executeSql}
             disabled={!sqlInput.trim() || !selectedDb}
-            className="p-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 transition-colors"
+            className="p-1.5 rounded bg-brand hover:bg-brand-600 text-white disabled:opacity-40 transition-colors"
             title="Executar SQL"
           >
             <Play className="w-3.5 h-3.5" />
@@ -184,7 +184,7 @@ export function DatabaseExplorer({ projectPath }: { projectPath?: string }) {
         <div className="flex-1 overflow-auto">
           {error && (
             <div className="p-3">
-              <div className="text-xs text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg px-3 py-2">{error}</div>
+              <div className="text-xs text-brand-400 bg-brand-900/30 border border-brand-800/30 rounded-lg px-3 py-2">{error}</div>
             </div>
           )}
 

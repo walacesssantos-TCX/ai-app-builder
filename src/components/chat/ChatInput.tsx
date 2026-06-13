@@ -75,7 +75,7 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
         {isStreaming ? (
           <button
             onClick={cancel}
-            className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors shrink-0"
+            className="p-2 rounded-lg bg-brand hover:bg-brand-600 text-white transition-colors shrink-0"
           >
             <Square className="w-4 h-4" />
           </button>
@@ -83,7 +83,7 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+            className="p-2 rounded-lg bg-brand hover:bg-brand-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
           >
             <Send className="w-4 h-4" />
           </button>

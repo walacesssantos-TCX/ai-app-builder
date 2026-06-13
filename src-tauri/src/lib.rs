@@ -1,7 +1,7 @@
 mod commands;
 mod skills_data;
 
-use commands::{ai, filesystem, llm_gateway, runner, terminal, skills, git, sidecar, updater};
+use commands::{filesystem, runner, terminal, skills, git, sidecar, updater};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,12 +15,8 @@ pub fn run() {
             filesystem::delete_file,
             filesystem::list_dir,
             filesystem::get_file_tree,
+            filesystem::get_hwid,
             terminal::run_command,
-            ai::ai_models,
-            ai::chat_completion,
-            ai::cancel_chat,
-            llm_gateway::cloud_chat_completion,
-            llm_gateway::cloud_models,
             skills::discover_skills,
             skills::read_skill,
             git::git_status,
@@ -28,6 +24,7 @@ pub fn run() {
             git::git_push,
             git::git_pull,
             git::git_clone,
+            git::git_branches,
             sidecar::start_sidecar,
             sidecar::stop_sidecar,
             sidecar::is_sidecar_running,

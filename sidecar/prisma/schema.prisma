@@ -70,9 +70,32 @@ model ProjectSkill {
   project Project @relation(fields: [projectId], references: [id])
 }
 
+model SupabaseConnection {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  anonKey   String
+  serviceKey String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
 model UserMemory {
   id        String   @id @default(cuid())
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model Deployment {
+  id          String   @id @default(cuid())
+  name        String
+  projectPath String
+  platform    String   @default("vercel")
+  url         String?
+  status      String   @default("created")
+  branch      String?
+  buildLog    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

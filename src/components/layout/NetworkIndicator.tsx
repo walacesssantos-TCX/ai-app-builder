@@ -32,11 +32,11 @@ export function NetworkIndicator() {
       title={status.online ? `Online (${status.latency}ms)` : `Offline: ${status.error || 'Sem internet'}`}
     >
       {status.online ? (
-        <Wifi className="w-3 h-3 text-emerald-500" />
+        <Wifi className="w-3 h-3 text-gold-500" />
       ) : (
-        <WifiOff className="w-3 h-3 text-red-400" />
+        <WifiOff className="w-3 h-3 text-brand-400" />
       )}
-      <span className={`text-[10px] ${status.online ? 'text-emerald-600/70' : 'text-red-400/70'}`}>
+      <span className={`text-[10px] ${status.online ? 'text-emerald-600/70' : 'text-brand-400/70'}`}>
         {status.online ? 'Online' : 'Offline'}
       </span>
     </div>

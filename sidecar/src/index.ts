@@ -10,12 +10,23 @@ import { registerApiKeyRoutes } from './routes/api-keys.js'
 import { registerProjectRoutes } from './routes/projects.js'
 import { registerConversationRoutes } from './routes/conversations.js'
 import { registerMcpRoutes } from './routes/mcp-servers.js'
+import { registerSubagentRoutes } from './routes/subagents.js'
 import { registerSkillRoutes } from './routes/skills.js'
 import { registerMemoryRoutes } from './routes/memory.js'
 import { registerDatabaseRoutes } from './routes/database.js'
+import { registerPreviewRoutes } from './routes/preview.js'
+import { registerSupabaseRoutes } from './routes/supabase.js'
+import { registerKanbanRoutes } from './routes/kanban.js'
+import { registerGitHubRoutes } from './routes/github.js'
+import { registerTemplateRoutes } from './routes/templates.js'
+import { registerDeployRoutes } from './routes/deploy.js'
 import { isRtkAvailable, getSavedTokens } from './services/rtk.js'
+import { mcpManager } from './services/mcp-manager.js'
+import { subagentManager } from './services/subagent-manager.js'
+import { devServerManager } from './services/dev-server-manager.js'
+import { supabaseManager } from './services/supabase-manager.js'
 import { prisma } from './lib/prisma.js'
-import { decryptKey } from './lib/crypto.js'
+import { decryptKey, setHwid } from './lib/crypto.js'
 import { getNetworkStatus } from './lib/network.js'
 
 const PORT = parseInt(process.env.PORT || '3001', 10)
@@ -34,7 +45,6 @@ function runMigrations() {
     execSync(`node "${prismaCli}" db push --schema="${schemaPath}" --skip-generate --accept-data-loss`, {
       cwd: path.resolve(__dirname, '..'),
       stdio: 'pipe',
-      env: { ...process.env, DATABASE_URL: undefined },
     })
     console.log('[sidecar] Database migrated successfully')
   } catch (e) {
@@ -85,6 +95,7 @@ async function main() {
     gemini: process.env.GEMINI_API_KEY || dbKeys.gemini || '',
     deepseek: process.env.DEEPSEEK_API_KEY || dbKeys.deepseek || '',
     mistral: process.env.MISTRAL_API_KEY || dbKeys.mistral || '',
+    cohere: process.env.COHERE_API_KEY || dbKeys.cohere || '',
   })
 
   registerChatRoutes(fastify, gateway)
@@ -92,6 +103,14 @@ async function main() {
   registerProjectRoutes(fastify)
   registerConversationRoutes(fastify)
   registerMcpRoutes(fastify)
+  registerSubagentRoutes(fastify, gateway)
+  registerPreviewRoutes(fastify)
+  registerSupabaseRoutes(fastify)
+
+  registerKanbanRoutes(fastify)
+  registerGitHubRoutes(fastify)
+  registerTemplateRoutes(fastify)
+  registerDeployRoutes(fastify)
   registerSkillRoutes(fastify)
   registerMemoryRoutes(fastify)
   registerDatabaseRoutes(fastify)
@@ -103,6 +122,15 @@ async function main() {
 
   fastify.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
 
+  fastify.post('/hwid', async (req) => {
+    const { hwid } = req.body as { hwid: string }
+    if (hwid) {
+      setHwid(hwid)
+      return { success: true }
+    }
+    return { success: false, error: 'hwid required' }
+  })
+
   fastify.get('/network-status', async () => {
     const ns = await getNetworkStatus()
     return ns
@@ -111,6 +139,26 @@ async function main() {
   fastify.get('/models', async () => ({
     models: gateway.getModels(),
   }))
+
+  mcpManager.start().catch(err => {
+    fastify.log.warn(`[mcp-manager] Failed to start: ${err}`)
+  })
+
+  subagentManager.loadCustom().catch(err => {
+    fastify.log.warn(`[subagent-manager] Failed to load custom subagents: ${err}`)
+  })
+
+  supabaseManager.start().catch(err => {
+    fastify.log.warn(`[supabase-manager] Failed to start: ${err}`)
+  })
+
+  const cleanup = () => {
+    devServerManager.onShutdown()
+    supabaseManager.onShutdown()
+    fastify.close()
+  }
+  process.on('SIGINT', cleanup)
+  process.on('SIGTERM', cleanup)
 
   try {
     await fastify.listen({ port: PORT, host: HOST })

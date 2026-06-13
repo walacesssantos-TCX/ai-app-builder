@@ -108,7 +108,7 @@ export interface LLMProvider {
   models: string[]
 }
 
-export type AgentEventType = 'thinking' | 'message' | 'tool_call' | 'tool_result'
+export type AgentEventType = 'thinking' | 'message' | 'tool_call' | 'tool_result' | 'subagent_task' | 'subagent_event' | 'subagent_result'
 
 export interface AgentEvent {
   type: AgentEventType
@@ -116,6 +116,16 @@ export interface AgentEvent {
   tool?: string
   params?: unknown
   result?: string
+  subagent?: string
+}
+
+export interface SubagentDefinition {
+  name: string
+  description: string
+  systemPrompt: string
+  allowedTools: string[]
+  model?: string
+  isBuiltin: boolean
 }
 
 export const LANGUAGES: Record<string, string> = {

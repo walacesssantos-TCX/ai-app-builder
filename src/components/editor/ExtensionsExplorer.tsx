@@ -57,7 +57,7 @@ export function ExtensionsExplorer() {
     <div className="flex-1 flex flex-col h-full bg-zinc-950 overflow-y-auto">
       <div className="px-4 py-3 border-b border-zinc-800">
         <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-2 mb-1">
-          <PuzzleIcon className="w-4 h-4 text-emerald-400" /> Extensões
+          <PuzzleIcon className="w-4 h-4 text-gold-400" /> Extensões
         </h2>
         <p className="text-[11px] text-zinc-600">Instale extensões para adicionar funcionalidades ao Fluxcodex.</p>
       </div>
@@ -117,7 +117,7 @@ export function ExtensionsExplorer() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-zinc-200">{ext.name}</span>
                       <span className="text-[10px] text-zinc-600">v{ext.version}</span>
-                      {ext.installed && <span className="text-[10px] text-emerald-400 bg-emerald-900/20 px-1.5 py-0.5 rounded">Instalada</span>}
+                      {ext.installed && <span className="text-[10px] text-gold-400 bg-emerald-900/20 px-1.5 py-0.5 rounded">Instalada</span>}
                     </div>
                     <p className="text-[11px] text-zinc-500 truncate">{ext.description}</p>
                     <div className="flex items-center gap-3 mt-1">
@@ -138,7 +138,7 @@ export function ExtensionsExplorer() {
                     onClick={() => toggleInstall(ext.id)}
                     className={cn(
                       'px-3 py-1.5 text-xs rounded-md transition-colors',
-                      ext.installed ? 'bg-zinc-800 text-zinc-400 hover:bg-red-900/30 hover:text-red-400' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      ext.installed ? 'bg-zinc-800 text-zinc-400 hover:bg-red-900/30 hover:text-brand-400' : 'bg-brand hover:bg-brand-600 text-white'
                     )}
                   >
                     {ext.installed ? 'Remover' : 'Instalar'}
@@ -154,7 +154,7 @@ export function ExtensionsExplorer() {
                       <span>Versão: {ext.version}</span>
                       <span>Categoria: {ext.category}</span>
                     </div>
-                    <button className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-[11px]">
+                    <button className="flex items-center gap-1 text-gold-400 hover:text-gold-300 text-[11px]">
                       <ExternalLink className="w-3 h-3" /> Ver documentação
                     </button>
                   </div>

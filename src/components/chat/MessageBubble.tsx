@@ -23,7 +23,7 @@ export function MessageBubble({ message, compact }: MessageBubbleProps) {
         className={cn(
           compact ? 'max-w-[90%] rounded-lg px-3 py-1.5' : 'max-w-[80%] rounded-2xl px-4 py-3',
           isUser
-            ? 'bg-blue-600 text-white rounded-br-md'
+            ? 'bg-gradient-to-br from-brand to-brand-600 text-white rounded-br-md'
             : isSystem
               ? 'bg-yellow-900/30 text-yellow-200 border border-yellow-800/50 rounded-bl-md'
               : 'bg-zinc-800/50 text-zinc-100 border border-zinc-800 rounded-bl-md'
@@ -39,7 +39,7 @@ export function MessageBubble({ message, compact }: MessageBubbleProps) {
                   const isInline = !className
                   if (isInline) {
                     return (
-                      <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-sm text-emerald-300" {...props}>
+                      <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-sm text-gold-300" {...props}>
                         {children}
                       </code>
                     )

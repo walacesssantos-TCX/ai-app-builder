@@ -1,11 +1,13 @@
-import { useCallback } from 'react'
-import { invoke, Channel } from '@tauri-apps/api/core'
+import { useCallback, useRef } from 'react'
 import { useChatStore } from '@/stores/chat.store'
-import { useSettingsStore, isCloudModel } from '@/stores/settings.store'
+import { useSettingsStore } from '@/stores/settings.store'
 import { useSkillsStore } from '@/stores/skills.store'
 
+const SIDECAR_URL = 'http://127.0.0.1:3001'
+
 export function useStream() {
-  const { setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens } = useChatStore()
+  const abortRef = useRef<AbortController | null>(null)
+  const { setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents } = useChatStore()
 
   const sendMessage = useCallback(async (message: string, mode: string, conversationId: string, projectId: string) => {
     const activeModel = useSettingsStore.getState().activeModel
@@ -21,6 +23,7 @@ export function useStream() {
 
     setIsStreaming(true)
     clearStream()
+    clearAgentEvents()
     setAgentRunning(mode === 'agent')
 
     addMessage({
@@ -31,31 +34,82 @@ export function useStream() {
       createdAt: new Date().toISOString(),
     })
 
-    const onEvent = new Channel<{ type: 'chunk' | 'token_usage'; content?: string; total?: number }>()
+    const abortController = new AbortController()
+    abortRef.current = abortController
+
     let fullContent = ''
 
-    onEvent.onmessage = (event) => {
-      if (event.type === 'chunk' && event.content) {
-        fullContent += event.content
-        appendStreamChunk(event.content)
-      } else if (event.type === 'token_usage') {
-        addTokens(event.total || 0)
-      }
-    }
-
     try {
-      const isLocalModel = !isCloudModel(activeModel)
+      const response = await fetch(`${SIDECAR_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          mode: mode === 'agent' ? 'agent' : mode,
+          model: activeModel,
+          activeSkills: pinnedSkills.length > 0 ? activeSkills : [],
+          availableSkills: allSkills.map(s => ({
+            name: s.name,
+            description: s.description,
+            priority: s.priority,
+          })),
+          pinnedSkills,
+          projectId,
+        }),
+        signal: abortController.signal,
+      })
 
-      if (isLocalModel) {
-        await invoke('chat_completion', {
-          request: { message, mode, model: activeModel, activeSkills },
-          onEvent,
-        })
-      } else {
-        await invoke('cloud_chat_completion', {
-          request: { message, mode, model: activeModel, activeSkills },
-          onEvent,
-        })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${await response.text()}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response body')
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || !trimmed.startsWith('data: ')) continue
+
+          const data = trimmed.slice(6)
+          if (data === '[DONE]') break
+
+          try {
+            const event = JSON.parse(data)
+
+            switch (event.type) {
+              case 'chunk':
+                fullContent += event.content
+                appendStreamChunk(event.content)
+                break
+              case 'token_usage':
+                addTokens(event.total || 0)
+                break
+              case 'message':
+                if (event.content) {
+                  fullContent = event.content
+                }
+                break
+              case 'thinking':
+              case 'tool_call':
+              case 'tool_result':
+                addAgentEvent(event)
+                break
+            }
+          } catch {
+            // skip malformed JSON
+          }
+        }
       }
 
       if (fullContent) {
@@ -69,6 +123,7 @@ export function useStream() {
         clearStream()
       }
     } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       const errMsg = typeof err === 'string' ? err : (err instanceof Error ? err.message : JSON.stringify(err))
       addMessage({
         id: crypto.randomUUID(),
@@ -80,11 +135,15 @@ export function useStream() {
     } finally {
       setIsStreaming(false)
       setAgentRunning(false)
+      abortRef.current = null
     }
-  }, [setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens])
+  }, [setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents])
 
   const cancel = useCallback(() => {
-    invoke('cancel_chat')
+    if (abortRef.current) {
+      abortRef.current.abort()
+      abortRef.current = null
+    }
   }, [])
 
   return { sendMessage, cancel }

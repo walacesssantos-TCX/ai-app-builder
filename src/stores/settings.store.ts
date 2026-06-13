@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ApiKey, McpServer, LLMProvider } from '@/types'
 
-const LOCAL_NATIVE_MODEL = 'qwen3.5:4b'
+const LOCAL_NATIVE_MODEL = 'llama3-70b-8192'
 
 // Lista de modelos de nuvem conhecidos. Qualquer outro modelo é tratado como local.
 export const CLOUD_MODEL_PREFIXES = [

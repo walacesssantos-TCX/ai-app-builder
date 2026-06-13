@@ -54,7 +54,7 @@ export function UpdateSection() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-100 flex items-center gap-2">
-          <RefreshCw className="w-4 h-4 text-emerald-400" /> Atualizações
+          <RefreshCw className="w-4 h-4 text-gold-400" /> Atualizações
         </h3>
         <button
           onClick={handleCheck}
@@ -81,7 +81,7 @@ export function UpdateSection() {
         {state.status === 'available' && (
           <>
             <div className="flex items-center gap-2">
-              <Download className="w-4 h-4 text-emerald-400" />
+              <Download className="w-4 h-4 text-gold-400" />
               <span className="text-xs font-medium text-zinc-100">
                 v{state.version} disponível
               </span>
@@ -91,7 +91,7 @@ export function UpdateSection() {
             )}
             <button
               onClick={state.download}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-brand hover:bg-brand-600 text-white transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               Baixar & Instalar
@@ -110,13 +110,13 @@ export function UpdateSection() {
 
         {state.status === 'uptodate' && (
           <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <CheckCircle className="w-3.5 h-3.5 text-gold-500" />
             Aplicativo está atualizado.
           </div>
         )}
 
         {state.status === 'error' && (
-          <div className="flex items-start gap-2 text-xs text-red-400">
+          <div className="flex items-start gap-2 text-xs text-brand-400">
             <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>{state.message}</span>
           </div>

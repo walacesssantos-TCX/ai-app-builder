@@ -236,11 +236,11 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
       >
         {(output[activeSession] || []).map((line, i) => (
           <div key={i} className={cn(
-            line.startsWith('PS') && line.includes('>') ? 'text-emerald-400' : '',
+            line.startsWith('PS') && line.includes('>') ? 'text-gold-400' : '',
             line.startsWith('[stdout]') ? 'text-zinc-300' : '',
-            line.startsWith('[stderr]') ? 'text-red-400' : '',
+            line.startsWith('[stderr]') ? 'text-brand-400' : '',
             line.startsWith('[exit]') ? 'text-zinc-600' : '',
-            line.startsWith('[Erro]') ? 'text-red-400' : '',
+            line.startsWith('[Erro]') ? 'text-brand-400' : '',
             !line.startsWith('PS') && !line.startsWith('[') ? 'text-zinc-400' : '',
           )}>
             {line}
@@ -249,7 +249,7 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
       </div>
 
       <div className="flex items-center gap-2 px-3 py-2 border-t border-zinc-800 bg-black">
-        <span className="text-emerald-400 text-xs font-mono shrink-0">PS {(cwd[activeSession] || '.')}&gt;</span>
+        <span className="text-gold-400 text-xs font-mono shrink-0">PS {(cwd[activeSession] || '.')}&gt;</span>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

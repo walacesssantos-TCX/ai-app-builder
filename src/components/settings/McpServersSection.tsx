@@ -69,7 +69,7 @@ export function McpServersSection() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-100 flex items-center gap-2">
-          <Boxes className="w-4 h-4 text-emerald-400" /> MCP Servers
+          <Boxes className="w-4 h-4 text-gold-400" /> MCP Servers
         </h3>
         <button
           onClick={() => setShowAdd(!showAdd)}
@@ -123,7 +123,7 @@ export function McpServersSection() {
             <button
               onClick={handleAdd}
               disabled={!name.trim()}
-              className="flex-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 transition-colors"
+              className="flex-1 px-3 py-1.5 text-xs rounded-md bg-brand hover:bg-brand-600 text-white disabled:opacity-40 transition-colors"
             >
               Salvar
             </button>
@@ -138,7 +138,7 @@ export function McpServersSection() {
       )}
 
       {error && (
-        <div className="text-xs text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg px-3 py-2">{error}</div>
+        <div className="text-xs text-brand-400 bg-brand-900/30 border border-brand-800/30 rounded-lg px-3 py-2">{error}</div>
       )}
 
       {servers.length === 0 && !showAdd ? (
@@ -152,7 +152,7 @@ export function McpServersSection() {
                   <Wrench className="w-3.5 h-3.5 text-zinc-500" />
                   <span className="text-xs font-medium text-zinc-200">{s.name}</span>
                   <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${
-                    s.enabled ? 'bg-emerald-900/40 text-emerald-400' : 'bg-zinc-800 text-zinc-600'
+                    s.enabled ? 'bg-emerald-900/40 text-gold-400' : 'bg-zinc-800 text-zinc-600'
                   }`}>
                     {s.transport}
                   </span>
@@ -165,14 +165,14 @@ export function McpServersSection() {
                 <button
                   onClick={() => handleToggle(s.id)}
                   className={`p-1.5 rounded transition-colors ${
-                    s.enabled ? 'text-emerald-400 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800'
+                    s.enabled ? 'text-gold-400 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800'
                   }`}
                 >
                   {s.enabled ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
                 </button>
                 <button
                   onClick={() => handleDelete(s.id)}
-                  className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-red-400 transition-colors"
+                  className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-brand-400 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

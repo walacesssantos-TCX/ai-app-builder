@@ -1,11 +1,11 @@
 {
-  "version": "0.1.15",
-  "notes": "Correcoes: stop button durante setup, timeout reqwest 60s, cloud models cancel",
-  "pub_date": "2026-06-12T15:00:00Z",
+  "version": "0.1.19",
+  "notes": "Remoção completa do Ollama nativo, agora 100% API-based. Corrigido bug 'Failed to fetch' no sidecar. Redesign visual completo.",
+  "pub_date": "2026-06-13T12:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "file:///D:/Projeto Fluxcodex/ai-app-builder/src-tauri/target/release/bundle/nsis/AI App Builder Studio_0.1.15_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.19/AI.App.Builder.Studio_0.1.19_x64-setup.exe"
     }
   }
 }

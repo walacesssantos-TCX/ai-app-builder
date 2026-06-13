@@ -1,4 +1,5 @@
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
 
@@ -98,4 +99,23 @@ pub fn get_file_tree(path: String) -> Result<String, String> {
     } else {
         Err("Path does not exist".to_string())
     }
+}
+
+#[tauri::command]
+pub fn get_hwid() -> String {
+    let hostname = std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_default();
+
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+
+    let username = std::env::var("USERNAME")
+        .or_else(|_| std::env::var("USER"))
+        .unwrap_or_default();
+
+    let raw = format!("{}|{}|{}|{}", hostname, os, arch, username);
+    let mut hasher = Sha256::new();
+    hasher.update(raw.as_bytes());
+    hex::encode(hasher.finalize())
 }

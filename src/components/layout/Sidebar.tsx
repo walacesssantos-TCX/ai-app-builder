@@ -11,17 +11,27 @@ import {
   Plus,
   MessageSquare,
   Trash2,
+  Columns,
+  Layers,
+  SplitSquareHorizontal,
+  ShoppingCart,
+  Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProjectStore } from '@/stores/project.store'
 
 const navItems = [
+  { id: 'chat', icon: MessageSquare, label: 'Chat' },
   { id: 'projects', icon: FolderOpen, label: 'Projetos' },
   { id: 'history', icon: History, label: 'Histórico' },
+  { id: 'templates', icon: Layers, label: 'Templates' },
+  { id: 'compare', icon: SplitSquareHorizontal, label: 'Comparar' },
+  { id: 'marketplace', icon: ShoppingCart, label: 'Marketplace' },
   { id: 'skills', icon: Puzzle, label: 'Skills' },
   { id: 'mcp', icon: Boxes, label: 'MCP Servers' },
   { id: 'extensions', icon: PuzzleIcon, label: 'Extensões' },
   { id: 'deploys', icon: Rocket, label: 'Deploys' },
+  { id: 'kanban', icon: Columns, label: 'Kanban' },
   { id: 'settings', icon: Settings, label: 'Configurações' },
 ]
 
@@ -63,10 +73,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             key={item.id}
             onClick={() => onTabChange(item.id)}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
+              'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
               activeTab === item.id
-                ? 'bg-zinc-800 text-zinc-100'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                ? 'bg-brand/10 text-zinc-100 border border-brand/20'
+                : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50 border border-transparent'
             )}
             title={item.label}
           >
@@ -98,7 +108,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 <span className="flex-1 truncate">{project.name}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteProject(project.id) }}
-                  className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-700 text-zinc-500 hover:text-red-400 transition-all"
+                  className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-700 text-zinc-500 hover:text-brand-400 transition-all"
                   title="Remover projeto"
                 >
                   <Trash2 className="w-3 h-3" />

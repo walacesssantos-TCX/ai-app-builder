@@ -1,12 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
   "productName": "AI App Builder Studio",
-  "version": "0.1.15",
+  "version": "0.1.19",
   "identifier": "com.fluxcodex.aiappbuilder",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "cd sidecar && npx tsc && cd .. && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -42,8 +42,7 @@
       "../sidecar/prisma/**/*",
       "../sidecar/.env",
       "../sidecar/package.json",
-      "resources/node/**/*",
-      "resources/ollama/**/*"
+      "resources/node/**/*"
     ]
   },
   "plugins": {
@@ -51,7 +50,7 @@
       "open": true
     },
     "updater": {
-      "active": false,
+      "active": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxN0NGMEZGMzgyNTAzNTYKUldSV0F5VTQvL0I4OGErUjluQ29mK25LeXhIWmxHNWZuUFBxeTZMa3UvNHcwVkwvNUcwMERPR2kK"
     }
   }

@@ -20,6 +20,9 @@ src-tauri/target/
 .env.local
 env.local
 
+# Session
+CHECKPOINT.md
+
 # IDE
 .vs/
 .vscode/

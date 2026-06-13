@@ -1,0 +1,8 @@
+{
+  "id": "node-api",
+  "name": "Node.js API",
+  "description": "API REST com Express + TypeScript, estrutura de rotas e configuração básica",
+  "category": "Backend",
+  "tags": ["node", "express", "typescript", "api"],
+  "order": 2
+}

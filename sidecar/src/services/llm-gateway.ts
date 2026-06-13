@@ -18,89 +18,6 @@ interface LLMProvider {
   models(): string[]
 }
 
-const OLLAMA_MODEL_NAME = 'fluxcodex-qwen35-native'
-
-class OllamaProvider implements LLMProvider {
-  name = 'ollama'
-  private baseUrl: string
-
-  constructor(baseUrl = 'http://127.0.0.1:11434') {
-    this.baseUrl = baseUrl
-  }
-
-  private async ensureReady(): Promise<void> {
-    const { ensureNativeOllamaModel } = await import('./ollama.js')
-    await ensureNativeOllamaModel(this.baseUrl, OLLAMA_MODEL_NAME)
-  }
-
-  async *streamChat(req: LLMRequest): AsyncGenerator<string> {
-    await this.ensureReady()
-
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: req.model,
-        stream: true,
-        messages: req.messages,
-        system: req.systemPrompt,
-        options: {
-          num_predict: req.maxTokens ?? 4096,
-        },
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.status} ${await response.text()}`)
-    }
-
-    const reader = response.body?.getReader()
-    if (!reader) throw new Error('No response body')
-
-    const decoder = new TextDecoder()
-    let buffer = ''
-    let inputTokens = 0
-    let outputTokens = 0
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed) continue
-
-        try {
-          const parsed = JSON.parse(trimmed)
-          if (parsed.message?.content) {
-            yield parsed.message.content
-          }
-          if (parsed.done) {
-            inputTokens = parsed.prompt_eval_count || inputTokens
-            outputTokens = parsed.eval_count || outputTokens
-          }
-        } catch {
-          // skip malformed chunks
-        }
-      }
-    }
-
-    if (req.onTokenUsage && (inputTokens || outputTokens)) {
-      req.onTokenUsage(inputTokens, outputTokens, inputTokens + outputTokens)
-    }
-  }
-
-  models(): string[] {
-    return [OLLAMA_MODEL_NAME]
-  }
-}
-
 class AnthropicProvider implements LLMProvider {
   name = 'anthropic'
   private apiKey: string
@@ -283,12 +200,6 @@ export class LLMGateway {
       throw new Error(`No provider found for model: ${req.model}`)
     }
 
-    const isNativeOllamaModel = provider.name === 'ollama' || req.model === OLLAMA_MODEL_NAME
-    if (isNativeOllamaModel) {
-      yield* provider.streamChat(req)
-      return
-    }
-
     const errors: Error[] = []
 
     try {
@@ -329,6 +240,7 @@ export class LLMGateway {
     if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma')) {
       return this.providers.get('groq')
     }
+    if (model.startsWith('command-')) return this.providers.get('cohere')
 
     return this.providers.get('groq') || this.providers.get('openai')
   }
@@ -446,10 +358,84 @@ class MistralProvider extends OpenAIProvider {
   }
 }
 
+class CohereProvider implements LLMProvider {
+  name = 'cohere'
+  private apiKey: string
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async *streamChat(req: LLMRequest): AsyncGenerator<string> {
+    const response = await fetch('https://api.cohere.com/v2/chat', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: req.model,
+        messages: [
+          ...(req.systemPrompt ? [{ role: 'system', content: req.systemPrompt }] : []),
+          ...req.messages.map(m => ({ role: m.role, content: m.content })),
+        ],
+        max_tokens: req.maxTokens ?? 8192,
+        stream: true,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Cohere API error: ${response.status} ${await response.text()}`)
+    }
+
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No response body')
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let inputTokens = 0
+    let outputTokens = 0
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6)
+        if (data === '[DONE]') return
+
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.type === 'text-generation' && parsed.text) {
+            yield parsed.text
+          }
+          if (parsed.type === 'stream-end') {
+            inputTokens = parsed.response?.meta?.billed_units?.input_tokens || 0
+            outputTokens = parsed.response?.meta?.billed_units?.output_tokens || 0
+          }
+        } catch {
+          // skip
+        }
+      }
+    }
+
+    if (req.onTokenUsage && (inputTokens || outputTokens)) {
+      req.onTokenUsage(inputTokens, outputTokens, inputTokens + outputTokens)
+    }
+  }
+
+  models(): string[] {
+    return ['command-a-03-2025', 'command-r-08-2024', 'command-r-plus-08-2024', 'command-r7b-12-2024']
+  }
+}
+
 export function createGateway(apiKeys: Record<string, string>): LLMGateway {
   const gateway = new LLMGateway()
-
-  gateway.registerProvider(new OllamaProvider())
 
   if (apiKeys.anthropic) {
     gateway.registerProvider(new AnthropicProvider(apiKeys.anthropic))
@@ -472,8 +458,11 @@ export function createGateway(apiKeys: Record<string, string>): LLMGateway {
   if (apiKeys.mistral) {
     gateway.registerProvider(new MistralProvider(apiKeys.mistral))
   }
+  if (apiKeys.cohere) {
+    gateway.registerProvider(new CohereProvider(apiKeys.cohere))
+  }
 
-  gateway.setFallbackOrder(['anthropic', 'gemini', 'openai', 'deepseek', 'mistral', 'groq', 'ollama'])
+  gateway.setFallbackOrder(['anthropic', 'gemini', 'openai', 'deepseek', 'mistral', 'cohere', 'groq'])
 
   return gateway
 }

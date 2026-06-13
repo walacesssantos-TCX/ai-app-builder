@@ -15,10 +15,10 @@ interface LogEntry {
 }
 
 const levelConfig: Record<LogLevel, { icon: typeof Info; color: string; bg: string }> = {
-  info: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-900/20' },
-  warn: { icon: AlertCircle, color: 'text-amber-400', bg: 'bg-amber-900/20' },
-  error: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-900/20' },
-  debug: { icon: Bug, color: 'text-purple-400', bg: 'bg-purple-900/20' },
+  info: { icon: Info, color: 'text-gold-400', bg: 'bg-blue-900/20' },
+  warn: { icon: AlertCircle, color: 'text-gold-400', bg: 'bg-amber-900/20' },
+  error: { icon: AlertCircle, color: 'text-brand-400', bg: 'bg-brand-900/30' },
+  debug: { icon: Bug, color: 'text-gold-400', bg: 'bg-purple-900/20' },
   system: { icon: Terminal, color: 'text-zinc-400', bg: 'bg-zinc-900/50' },
 }
 
@@ -78,7 +78,7 @@ export function LogsViewer() {
           {logs.length > 0 && (
             <span className="text-[10px] text-zinc-700 bg-zinc-900 px-1.5 py-0.5 rounded">{logs.length}</span>
           )}
-          {isAgentRunning && <Loader className="w-3 h-3 text-emerald-400 animate-spin" />}
+          {isAgentRunning && <Loader className="w-3 h-3 text-gold-400 animate-spin" />}
         </div>
         <div className="flex items-center gap-1">
           {(['all', 'error', 'warn', 'info', 'debug', 'system'] as const).map(level => (
@@ -95,7 +95,7 @@ export function LogsViewer() {
           ))}
           <button
             onClick={() => setAutoScroll(!autoScroll)}
-            className={cn('px-1.5 py-0.5 rounded text-[10px] transition-colors', autoScroll ? 'text-emerald-400' : 'text-zinc-700 hover:text-zinc-500')}
+            className={cn('px-1.5 py-0.5 rounded text-[10px] transition-colors', autoScroll ? 'text-gold-400' : 'text-zinc-700 hover:text-zinc-500')}
           >
             Auto
           </button>
@@ -134,8 +134,8 @@ export function LogsViewer() {
         {streamingContent && (
           <div className="flex items-start gap-2 px-2 py-0.5 rounded bg-emerald-900/10">
             <span className="text-[10px] text-zinc-700 shrink-0 w-16">{new Date().toISOString().slice(11, 19)}</span>
-            <Info className="w-3 h-3 mt-0.5 shrink-0 text-emerald-400" />
-            <span className="text-[10px] uppercase font-medium shrink-0 w-12 text-emerald-400">Stream</span>
+            <Info className="w-3 h-3 mt-0.5 shrink-0 text-gold-400" />
+            <span className="text-[10px] uppercase font-medium shrink-0 w-12 text-gold-400">Stream</span>
             <span className="text-[10px] text-zinc-700 shrink-0 w-20">Sidecar</span>
             <span className="text-[11px] text-zinc-500 truncate">{streamingContent.slice(0, 200)}{streamingContent.length > 200 ? '...' : ''}</span>
           </div>

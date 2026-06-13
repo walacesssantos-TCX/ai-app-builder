@@ -57,7 +57,7 @@ export function PluginManager() {
           {pluginSkills.map(skill => {
             const isActive = pinned.includes(skill.name)
             return (
-              <div key={skill.name} className={`p-3 rounded-xl border transition-colors ${isActive ? 'border-blue-500/40 bg-blue-500/5' : 'border-zinc-700/50 bg-zinc-800/30'}`}>
+              <div key={skill.name} className={`p-3 rounded-xl border transition-colors ${isActive ? 'border-brand/40 bg-brand/5' : 'border-zinc-700/50 bg-zinc-800/30'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <div className="font-medium text-sm text-zinc-200">{skill.name}</div>
@@ -65,7 +65,7 @@ export function PluginManager() {
                   </div>
                   <button
                     onClick={() => isActive ? unpin(skill.name) : pin(skill.name)}
-                    className={`text-xs px-2.5 py-1 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`}
+                    className={`text-xs px-2.5 py-1 rounded-lg transition-colors ${isActive ? 'bg-brand text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`}
                   >
                     {isActive ? 'Ativo' : 'Inativo'}
                   </button>

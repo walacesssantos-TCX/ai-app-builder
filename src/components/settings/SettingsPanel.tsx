@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Key, Brain, Boxes, Puzzle, RefreshCw } from 'lucide-react'
+import { Key, Brain, Boxes, Puzzle, RefreshCw, Bot, Database, Github } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApiKeysSection } from './ApiKeysSection'
 import { ModelsSection } from './ModelsSection'
 import { McpServersSection } from './McpServersSection'
 import { PluginManager } from './PluginManager'
+import { SubagentManagerSection } from './SubagentManagerSection'
 import { UpdateSection } from './UpdateSection'
+import { SupabaseSection } from './SupabaseSection'
+import { GitHubSection } from './GitHubSection'
 import { useSettingsStore } from '@/stores/settings.store'
 import { invoke } from '@tauri-apps/api/core'
 
@@ -13,7 +16,10 @@ const tabs = [
   { id: 'api-keys', icon: Key, label: 'API Keys' },
   { id: 'models', icon: Brain, label: 'Modelos' },
   { id: 'plugins', icon: Puzzle, label: 'Plugins' },
+  { id: 'subagents', icon: Bot, label: 'Subagentes' },
   { id: 'mcp', icon: Boxes, label: 'MCP Servers' },
+  { id: 'github', icon: Github, label: 'GitHub' },
+  { id: 'supabase', icon: Database, label: 'Supabase' },
   { id: 'update', icon: RefreshCw, label: 'Atualizar' },
 ]
 
@@ -38,10 +44,10 @@ export function SettingsPanel() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all duration-150',
               activeTab === tab.id
-                ? 'bg-zinc-800 text-zinc-100'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-brand/10 text-zinc-100 border border-brand/20'
+                : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
             )}
           >
             <tab.icon className="w-3.5 h-3.5" />
@@ -56,7 +62,10 @@ export function SettingsPanel() {
           <ModelsSection activeModel={activeModel} onModelChange={setActiveModel} />
         )}
         {activeTab === 'plugins' && <PluginManager />}
+        {activeTab === 'subagents' && <SubagentManagerSection />}
         {activeTab === 'mcp' && <McpServersSection />}
+        {activeTab === 'github' && <GitHubSection />}
+        {activeTab === 'supabase' && <SupabaseSection />}
         {activeTab === 'update' && <UpdateSection />}
       </div>
 

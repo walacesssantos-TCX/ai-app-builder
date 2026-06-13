@@ -36,7 +36,7 @@ export function EditorPanel() {
             onClick={() => setActiveFile(file.id)}
           >
             {file.isDirty && (
-              <Circle className="w-2 h-2 fill-blue-400 text-blue-400 shrink-0" />
+              <Circle className="w-2 h-2 fill-blue-400 text-gold-400 shrink-0" />
             )}
             <span className="truncate max-w-32">{file.name}</span>
             <button

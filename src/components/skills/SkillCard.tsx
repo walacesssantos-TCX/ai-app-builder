@@ -38,7 +38,7 @@ export function SkillCard({ skill, isPinned, onTogglePin }: SkillCardProps) {
             'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
             isPinned ? 'bg-blue-500/10' : 'bg-zinc-800'
           )}>
-            <Icon className={cn('w-3.5 h-3.5', isPinned ? 'text-blue-400' : 'text-zinc-400')} />
+            <Icon className={cn('w-3.5 h-3.5', isPinned ? 'text-gold-400' : 'text-zinc-400')} />
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-medium text-zinc-100 truncate">{skill.name}</h3>
@@ -52,7 +52,7 @@ export function SkillCard({ skill, isPinned, onTogglePin }: SkillCardProps) {
           className={cn(
             'p-1.5 rounded transition-colors shrink-0',
             isPinned
-              ? 'text-blue-400 hover:text-blue-300 bg-blue-500/10'
+              ? 'text-gold-400 hover:text-gold-300 bg-blue-500/10'
               : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800'
           )}
           title={isPinned ? 'Desafixar' : 'Fixar'}

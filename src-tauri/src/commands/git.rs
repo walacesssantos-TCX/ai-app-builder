@@ -96,3 +96,9 @@ pub fn git_clone(url: String, destination: String) -> Result<(), String> {
         Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
     }
 }
+
+#[tauri::command]
+pub fn git_branches(path: String) -> Result<Vec<String>, String> {
+    let output = git(&["branch", "--list", "--format=%(refname:short)"], &path)?;
+    Ok(output.lines().map(String::from).collect())
+}

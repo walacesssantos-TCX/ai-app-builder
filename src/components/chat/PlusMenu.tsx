@@ -131,7 +131,7 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
             <button
               onClick={handleAddContext}
               disabled={!contextText.trim()}
-              className="flex-1 px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 transition-colors"
+              className="flex-1 px-3 py-1.5 text-xs rounded-md bg-brand hover:bg-brand-600 text-white disabled:opacity-40 transition-colors"
             >
               Adicionar
             </button>

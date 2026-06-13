@@ -44,7 +44,7 @@ fn resolve_installer_path(raw: &str) -> String {
 }
 
 fn strip_bom(s: &str) -> &str {
-    if s.starts_with('\u{feff}') { &s[3..] } else { s }
+    s.strip_prefix('\u{feff}').unwrap_or(s)
 }
 
 fn urlencoding_decode(s: &str) -> String {
@@ -53,10 +53,16 @@ fn urlencoding_decode(s: &str) -> String {
     while let Some(c) = chars.next() {
         if c == '%' {
             let hex: String = chars.by_ref().take(2).collect();
-            if let Ok(byte) = u8::from_str_radix(&hex, 16) {
-                result.push(byte as char);
-                continue;
+            if hex.len() == 2 {
+                if let Ok(byte) = u8::from_str_radix(&hex, 16) {
+                    result.push(byte as char);
+                    continue;
+                }
             }
+            // invalid percent sequence — push raw chars
+            result.push('%');
+            result.push_str(&hex);
+            continue;
         }
         result.push(c);
     }
@@ -106,13 +112,16 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
             continue;
         }
 
-        let win_key = manifest
+        let win_key_option = manifest
             .platforms
             .keys()
-            .find(|k| k.contains("windows"))
-            .ok_or_else(|| "No windows platform entry in updater.json".to_string())?;
+            .find(|k| k.contains("windows"));
 
-        let entry = &manifest.platforms[win_key];
+        if win_key_option.is_none() {
+            continue;
+        }
+
+        let entry = &manifest.platforms[win_key_option.unwrap()];
         let installer_path = resolve_installer_path(&entry.url);
 
         return Ok(Some(LocalUpdateInfo {

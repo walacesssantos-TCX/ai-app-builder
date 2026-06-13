@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Brain } from 'lucide-react'
-import { invoke } from '@tauri-apps/api/core'
 
-const DEFAULT_MODELS = [
-  { provider: 'Local', models: ['qwen3.5:4b', 'fluxcodex-qwen35-native'] },
-]
+const SIDECAR_URL = 'http://127.0.0.1:3001'
 
 interface ModelsSectionProps {
   activeModel: string
@@ -12,16 +9,44 @@ interface ModelsSectionProps {
 }
 
 export function ModelsSection({ activeModel, onModelChange }: ModelsSectionProps) {
-  const [availableModels, setAvailableModels] = useState<{ provider: string; models: string[] }[]>(DEFAULT_MODELS)
+  const [availableModels, setAvailableModels] = useState<{ provider: string; models: string[] }[]>([])
 
   useEffect(() => {
-    Promise.all([
-      invoke<{ provider: string; models: string[] }[]>('ai_models'),
-      invoke<{ provider: string; models: string[] }[]>('cloud_models'),
-    ])
-      .then(([local, cloud]) => {
-        const combined = [...local, ...cloud]
-        setAvailableModels(combined)
+    fetch(`${SIDECAR_URL}/models`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.models) {
+          const grouped: Record<string, string[]> = {}
+          for (const model of data.models) {
+            if (model.startsWith('gpt-') || model.startsWith('o1') || model.startsWith('o3')) {
+              if (!grouped['OpenAI']) grouped['OpenAI'] = []
+              grouped['OpenAI'].push(model)
+            } else if (model.startsWith('claude-')) {
+              if (!grouped['Anthropic']) grouped['Anthropic'] = []
+              grouped['Anthropic'].push(model)
+            } else if (model.startsWith('gemini-')) {
+              if (!grouped['Gemini']) grouped['Gemini'] = []
+              grouped['Gemini'].push(model)
+            } else if (model.startsWith('deepseek-')) {
+              if (!grouped['DeepSeek']) grouped['DeepSeek'] = []
+              grouped['DeepSeek'].push(model)
+            } else if (model.includes('mistral') || model.includes('codestral')) {
+              if (!grouped['Mistral']) grouped['Mistral'] = []
+              grouped['Mistral'].push(model)
+            } else if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma')) {
+              if (!grouped['Groq']) grouped['Groq'] = []
+              grouped['Groq'].push(model)
+            } else if (model.startsWith('command-')) {
+              if (!grouped['Cohere']) grouped['Cohere'] = []
+              grouped['Cohere'].push(model)
+            } else {
+              if (!grouped['Outros']) grouped['Outros'] = []
+              grouped['Outros'].push(model)
+            }
+          }
+          const result = Object.entries(grouped).map(([provider, models]) => ({ provider, models }))
+          setAvailableModels(result)
+        }
       })
       .catch(() => {})
   }, [])
@@ -29,7 +54,7 @@ export function ModelsSection({ activeModel, onModelChange }: ModelsSectionProps
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-zinc-100 flex items-center gap-2">
-        <Brain className="w-4 h-4 text-purple-400" /> Modelos de IA
+        <Brain className="w-4 h-4 text-gold-400" /> Modelos de IA
       </h3>
 
       <div className="space-y-3">
@@ -42,7 +67,7 @@ export function ModelsSection({ activeModel, onModelChange }: ModelsSectionProps
                   key={model}
                   className={`flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                     activeModel === model
-                      ? 'bg-blue-600/10 border border-blue-600/30'
+                      ? 'bg-brand/10 border border-brand/30'
                       : 'bg-zinc-900 border border-zinc-800 hover:border-zinc-700'
                   }`}
                 >
@@ -52,11 +77,11 @@ export function ModelsSection({ activeModel, onModelChange }: ModelsSectionProps
                     value={model}
                     checked={activeModel === model}
                     onChange={() => onModelChange(model)}
-                    className="accent-blue-500"
+                    className="accent-red-600"
                   />
                   <span className="text-xs text-zinc-300">{model}</span>
                   {activeModel === model && (
-                    <span className="ml-auto text-[10px] text-blue-400 bg-blue-600/20 px-1.5 py-0.5 rounded">Ativo</span>
+                    <span className="ml-auto text-[10px] text-gold-400 bg-brand/20 px-1.5 py-0.5 rounded">Ativo</span>
                   )}
                 </label>
               ))}

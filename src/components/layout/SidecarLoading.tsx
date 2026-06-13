@@ -35,15 +35,15 @@ export function SidecarLoading({ status, retryCount, onRetry }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950">
       <div className="flex flex-col items-center gap-4 text-center max-w-sm">
         {status === 'offline' ? (
-          <div className="w-16 h-16 rounded-full bg-red-900/20 flex items-center justify-center">
-            <WifiOff className="w-8 h-8 text-red-400" />
+          <div className="w-16 h-16 rounded-full bg-brand-900/30 flex items-center justify-center">
+            <WifiOff className="w-8 h-8 text-brand-400" />
           </div>
         ) : (
           <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center">
             {status === 'starting' ? (
-              <Cpu className="w-8 h-8 text-amber-400" />
+              <Cpu className="w-8 h-8 text-gold-400" />
             ) : (
-              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-gold-400 animate-spin" />
             )}
           </div>
         )}

@@ -19,9 +19,9 @@ export function ModeSelector() {
           onClick={() => setMode(m.id)}
           title={m.description}
           className={cn(
-            'px-3 py-1 text-xs font-medium rounded-md transition-all',
+            'px-3 py-1 text-xs font-medium rounded-md transition-all duration-150',
             mode === m.id
-              ? 'bg-zinc-700 text-zinc-100 shadow-sm'
+              ? 'bg-brand text-white shadow-sm'
               : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
