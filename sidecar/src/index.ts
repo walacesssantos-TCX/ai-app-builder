@@ -4,7 +4,7 @@ import { execSync } from 'child_process'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import path from 'path'
-import { createGateway } from './services/llm-gateway.js'
+import { createGateway, setCurrentGateway } from './services/llm-gateway.js'
 import { registerChatRoutes } from './routes/chat.js'
 import { registerApiKeyRoutes } from './routes/api-keys.js'
 import { registerProjectRoutes } from './routes/projects.js'
@@ -129,6 +129,7 @@ async function main() {
     mistral: process.env.MISTRAL_API_KEY || dbKeys.mistral || '',
     cohere: process.env.COHERE_API_KEY || dbKeys.cohere || '',
   })
+  setCurrentGateway(gateway)
 
   const reloadGateway = async () => {
     const fresh = await loadKeysFromDb()
@@ -142,14 +143,15 @@ async function main() {
       mistral: fresh.mistral || '',
       cohere: fresh.cohere || '',
     })
+    setCurrentGateway(gateway)
   }
 
-  registerChatRoutes(fastify, gateway)
+  registerChatRoutes(fastify)
   registerApiKeyRoutes(fastify, gateway, reloadGateway)
   registerProjectRoutes(fastify)
   registerConversationRoutes(fastify)
   registerMcpRoutes(fastify)
-  registerSubagentRoutes(fastify, gateway)
+  registerSubagentRoutes(fastify)
   registerPreviewRoutes(fastify)
   registerSupabaseRoutes(fastify)
 

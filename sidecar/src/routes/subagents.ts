@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { subagentManager } from '../services/subagent-manager.js'
-import type { LLMGateway } from '../services/llm-gateway.js'
+import { getCurrentGateway } from '../services/llm-gateway.js'
 
 const createSchema = z.object({
   name: z.string().min(1).regex(/^[a-z][a-z0-9_-]*$/, 'Name must start with a letter and contain only lowercase letters, numbers, hyphens and underscores'),
@@ -18,7 +18,7 @@ const updateSchema = z.object({
   model: z.string().optional(),
 })
 
-export function registerSubagentRoutes(fastify: FastifyInstance, gateway: LLMGateway): void {
+export function registerSubagentRoutes(fastify: FastifyInstance): void {
   fastify.get('/subagents', async () => {
     return { subagents: subagentManager.listSubagents() }
   })
@@ -63,7 +63,7 @@ export function registerSubagentRoutes(fastify: FastifyInstance, gateway: LLMGat
       return { error: 'task is required' }
     }
     const gen = subagentManager.runSubagent(name, task, {
-      gateway,
+      gateway: getCurrentGateway(),
       message: task,
       history: [],
       activeSkills: [],

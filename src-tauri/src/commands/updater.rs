@@ -213,8 +213,8 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
 }
 
 #[tauri::command]
-pub fn install_update(path: String) -> Result<(), String> {
-    // If path is a URL, download it first
+pub fn install_update(path: String) -> Result<String, String> {
+    // Download from URL if needed, return local path
     let installer_path = if path.starts_with("http://") || path.starts_with("https://") {
         let client = reqwest::blocking::Client::builder()
             .user_agent("ai-app-builder-updater")
@@ -245,6 +245,16 @@ pub fn install_update(path: String) -> Result<(), String> {
         return Err(format!("Instalador não encontrado: {}", installer_path));
     }
 
+    Ok(installer_path)
+}
+
+#[tauri::command]
+pub fn run_installer(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err(format!("Instalador não encontrado: {}", path));
+    }
+
     // Kill only the sidecar (node.exe) so Prisma engine DLL is unlocked
     let _ = std::process::Command::new("taskkill")
         .args(["/f", "/t", "/im", "node.exe"])
@@ -254,15 +264,13 @@ pub fn install_update(path: String) -> Result<(), String> {
 
     std::thread::sleep(std::time::Duration::from_secs(3));
 
-    // Run installer silently (no /RUN — user restarts manually)
-    let status = std::process::Command::new(&installer_path)
+    // Spawn installer detached — it will outlive the Tauri process
+    std::process::Command::new(&path)
         .args(["/S"])
-        .status()
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
         .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
-
-    if !status.success() {
-        return Err(format!("Instalador falhou com código: {:?}", status.code()));
-    }
 
     Ok(())
 }

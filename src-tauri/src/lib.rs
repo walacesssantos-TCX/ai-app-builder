@@ -30,6 +30,7 @@ pub fn run() {
             sidecar::is_sidecar_running,
             updater::check_local_update,
             updater::install_update,
+            updater::run_installer,
             updater::get_app_version,
             runner::run_tool,
         ])

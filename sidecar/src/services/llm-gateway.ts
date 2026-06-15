@@ -434,6 +434,17 @@ class CohereProvider implements LLMProvider {
   }
 }
 
+let _currentGateway: LLMGateway | null = null
+
+export function setCurrentGateway(g: LLMGateway) {
+  _currentGateway = g
+}
+
+export function getCurrentGateway(): LLMGateway {
+  if (!_currentGateway) throw new Error('Gateway not initialized')
+  return _currentGateway
+}
+
 export function createGateway(apiKeys: Record<string, string>): LLMGateway {
   const gateway = new LLMGateway()
 

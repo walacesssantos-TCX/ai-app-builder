@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { execSync } from 'child_process'
 import { readFile, writeFile, readdir } from 'fs/promises'
-import { LLMGateway } from '../services/llm-gateway.js'
+import { getCurrentGateway } from '../services/llm-gateway.js'
 import { buildContext } from '../services/context-builder.js'
 import { runAgent } from '../services/agent-engine.js'
 import { scoreSkills } from '../services/skill-scorer.js'
@@ -223,7 +223,7 @@ Formate sua resposta com:
 - Uma seção de **resposta final** (direta e concisa)`
 }
 
-export function registerChatRoutes(fastify: FastifyInstance, gateway: LLMGateway): void {
+export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown): void {
   fastify.post('/chat', async (req, reply) => {
     const parsed = chatSchema.parse(req.body)
     let { message, mode, activeSkills, projectId, availableSkills, pinnedSkills } = parsed
@@ -239,7 +239,7 @@ export function registerChatRoutes(fastify: FastifyInstance, gateway: LLMGateway
         availableSkills.map(s => ({ name: s.name, description: s.description, priority: s.priority })),
         pinnedSkills || [],
         3,
-        gateway
+        getCurrentGateway()
       )
 
       if (selected.length > 0 && (!activeSkills || activeSkills.length === 0)) {
@@ -268,7 +268,7 @@ export function registerChatRoutes(fastify: FastifyInstance, gateway: LLMGateway
           .flatMap(s => s.tools || [])
 
         for await (const event of runAgent({
-          gateway,
+          gateway: getCurrentGateway(),
           tools,
           customTools: customTools.length > 0 ? customTools : undefined,
           input: {
@@ -287,7 +287,7 @@ export function registerChatRoutes(fastify: FastifyInstance, gateway: LLMGateway
 
         reply.raw.write(`data: ${JSON.stringify({ type: 'system_prompt', length: systemPrompt.length })}\n\n`)
 
-        for await (const chunk of gateway.stream({
+        for await (const chunk of getCurrentGateway().stream({
           messages: ctx.messages,
           model,
           stream: true,
@@ -327,7 +327,7 @@ export function registerChatRoutes(fastify: FastifyInstance, gateway: LLMGateway
     const results = await Promise.allSettled(
       models.map(async (model) => {
         const chunks: string[] = []
-        for await (const chunk of gateway.stream({
+        for await (const chunk of getCurrentGateway().stream({
           messages: [{ role: 'user', content: prompt }],
           model,
           stream: true,

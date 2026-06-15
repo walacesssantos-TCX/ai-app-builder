@@ -6,9 +6,10 @@ import { relaunch } from '@tauri-apps/plugin-process'
 type UpdateState =
   | { status: 'idle' }
   | { status: 'checking' }
-  | { status: 'available'; version: string; notes?: string; download: () => Promise<void> }
-  | { status: 'downloading'; progress: number }
-  | { status: 'installed' }
+  | { status: 'available'; version: string; notes?: string; installerPath: string }
+  | { status: 'downloading' }
+  | { status: 'downloaded'; path: string }
+  | { status: 'installing' }
   | { status: 'uptodate' }
   | { status: 'error'; message: string }
 
@@ -35,21 +36,35 @@ export function UpdateSection() {
           status: 'available',
           version: local.version,
           notes: local.notes,
-          download: async () => {
-            setState({ status: 'downloading', progress: 0 })
-            try {
-              await invoke('install_update', { path: local.installer_path })
-              setState({ status: 'installed' })
-            } catch (e) {
-              setState({ status: 'error', message: `Falha ao instalar: ${e}` })
-            }
-          },
+          installerPath: local.installer_path,
         })
         return
       }
       setState({ status: 'uptodate' })
     } catch (err) {
       setState({ status: 'error', message: String(err) })
+    }
+  }
+
+  async function handleDownload() {
+    if (state.status !== 'available') return
+    setState({ status: 'downloading' })
+    try {
+      const localPath = await invoke<string>('install_update', { path: state.installerPath })
+      setState({ status: 'downloaded', path: localPath })
+    } catch (e) {
+      setState({ status: 'error', message: `Falha ao baixar: ${e}` })
+    }
+  }
+
+  async function handleInstallAndRestart() {
+    if (state.status !== 'downloaded') return
+    setState({ status: 'installing' })
+    try {
+      await invoke('run_installer', { path: state.path })
+      await relaunch()
+    } catch (e) {
+      setState({ status: 'error', message: `Falha ao instalar: ${e}` })
     }
   }
 
@@ -93,11 +108,11 @@ export function UpdateSection() {
               <p className="text-xs text-zinc-500 leading-relaxed whitespace-pre-wrap">{state.notes}</p>
             )}
             <button
-              onClick={state.download}
+              onClick={handleDownload}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-brand hover:bg-brand-600 text-white transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
-              Baixar & Instalar
+              Baixar atualização
             </button>
           </>
         )}
@@ -106,30 +121,37 @@ export function UpdateSection() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs text-zinc-400">
               <Download className="w-3.5 h-3.5 animate-pulse" />
-              Instalando atualização...
+              Baixando atualização...
             </div>
           </div>
         )}
 
-        {state.status === 'installed' && (
+        {state.status === 'downloaded' && (
           <>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
               <span className="text-xs font-medium text-zinc-100">
-                Instalação concluída!
+                Download concluído!
               </span>
             </div>
             <p className="text-xs text-zinc-500">
-              Reinicie o aplicativo para usar a nova versão.
+              Reinicie o aplicativo para instalar a nova versão.
             </p>
             <button
-              onClick={() => relaunch()}
+              onClick={handleInstallAndRestart}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-brand hover:bg-brand-600 text-white transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reiniciar agora
+              Reiniciar e instalar
             </button>
           </>
+        )}
+
+        {state.status === 'installing' && (
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+            Instalando e reiniciando...
+          </div>
         )}
 
         {state.status === 'uptodate' && (
