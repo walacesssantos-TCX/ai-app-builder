@@ -114,8 +114,8 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
     // 1. GitHub releases first (primary source)
     match check_github_release(current_version) {
         Ok(Some(info)) => return Ok(Some(info)),
-        Ok(None) => {}
-        Err(e) => eprintln!("[updater] GitHub check failed: {}", e),
+        Ok(None) => log_updater("GitHub returned no newer version"),
+        Err(e) => log_updater(&format!("GitHub check error: {}", e)),
     }
 
     // 2. Fallback: local updater.json files (dev/test)
@@ -170,20 +170,36 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
     Ok(None)
 }
 
+fn log_updater(msg: &str) {
+    let log_path = std::env::temp_dir().join("aibuilder-updater.log");
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_path) {
+        use std::io::Write;
+        let _ = writeln!(f, "{}", msg);
+    }
+}
+
 fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String> {
     let url = format!(
         "https://api.github.com/repos/{}/{}/releases/latest",
         GH_OWNER, GH_REPO
     );
 
+    log_updater(&format!("Checking GitHub: current={} url={}", current, url));
+
     let client = reqwest::blocking::Client::builder()
         .user_agent("ai-app-builder-updater")
-        .connect_timeout(std::time::Duration::from_secs(5))
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(20))
         .build()
         .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
 
-    let resp = client.get(&url).send().map_err(|e| format!("HTTP error: {}", e))?;
+    let resp = client.get(&url).send().map_err(|e| {
+        let msg = format!("HTTP error: {}", e);
+        log_updater(&msg);
+        msg
+    })?;
     if !resp.status().is_success() {
+        log_updater(&format!("GitHub returned HTTP {}", resp.status()));
         return Ok(None);
     }
 
@@ -191,8 +207,11 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
 
     let tag_version = release.tag_name.trim_start_matches('v');
     if !is_newer(tag_version, current) {
+        log_updater(&format!("GitHub latest={} not newer than current={}", tag_version, current));
         return Ok(None);
     }
+
+    log_updater(&format!("Update found: v{}", tag_version));
 
     // Find the NSIS installer asset
     let installer = release.assets.iter().find(|a| a.name.ends_with("-setup.exe"));
