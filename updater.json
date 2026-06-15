@@ -1,11 +1,11 @@
 {
-  "version": "0.1.23",
-  "notes": "Fix raiz do Failed to fetch: timeout rtk 3s + buildContext 15s. Chave API persiste (HWID local). Update baixa só resposta HTTP ok.",
-  "pub_date": "2026-06-15T19:00:00Z",
+  "version": "0.1.24",
+  "notes": "Mesmo código do v0.1.23 — bump de versão para trigger de update in-app.",
+  "pub_date": "2026-06-15T19:30:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.23/AI.App.Builder.Studio_0.1.23_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.24/AI.App.Builder.Studio_0.1.24_x64-setup.exe"
     }
   }
 }
