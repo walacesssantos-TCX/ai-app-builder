@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Upload, Puzzle, FileText, X } from 'lucide-react'
 import { useChatStore } from '@/stores/chat.store'
+import { SkillsPopup } from './SkillsPopup'
 import type { FileAttachment } from '@/types'
 
 const TEXT_EXTENSIONS = new Set(['txt', 'json', 'js', 'ts', 'jsx', 'tsx', 'py', 'rs', 'go', 'java', 'cs', 'sql', 'html', 'css', 'md', 'csv', 'xml', 'yaml', 'yml', 'sh', 'ps1', 'bat', 'env', 'ini', 'cfg', 'log', 'toml', 'lock'])
@@ -48,6 +49,7 @@ interface PlusMenuProps {
 export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
   const [open, setOpen] = useState(false)
   const [contextOpen, setContextOpen] = useState(false)
+  const [skillsOpen, setSkillsOpen] = useState(false)
   const [contextText, setContextText] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ref = useRef<HTMLDivElement>(null)
@@ -109,8 +111,8 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
   }
 
   const handleSkills = () => {
-    onNavigate?.('skills')
     setOpen(false)
+    setSkillsOpen(true)
   }
 
   return (
@@ -205,6 +207,8 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
           </div>
         </div>
       )}
+
+      <SkillsPopup open={skillsOpen} onClose={() => setSkillsOpen(false)} />
     </div>
   )
 }

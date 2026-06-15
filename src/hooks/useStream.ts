@@ -49,6 +49,7 @@ export function useStream() {
         conversationId,
         role: 'user',
         content: message,
+        attachments: files.length > 0 ? files : undefined,
         createdAt: new Date().toISOString(),
       })
 
