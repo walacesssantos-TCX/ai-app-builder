@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto'
+import { platform } from 'node:os'
 
 const ALGORITHM = 'aes-256-gcm'
 const SALT = 'fluxcodex-hwid-salt-v1'
@@ -13,6 +14,15 @@ let _key: Buffer | null = null
 
 export function setHwid(hwid: string): void {
   _key = deriveKey(hwid)
+}
+
+export function generateHwid(): string {
+  const computer = process.env.COMPUTERNAME || 'unknown'
+  const os = platform()
+  const architecture = process.arch
+  const user = process.env.USERNAME || 'unknown'
+  const raw = `${computer}|${os}|${architecture}|${user}`
+  return createHash('sha256').update(raw).digest('hex')
 }
 
 function getKey(): Buffer {

@@ -92,7 +92,9 @@ fn get_default_updater_paths() -> Vec<String> {
             paths.push(exe_dir.join("updater.json").to_string_lossy().to_string());
         }
     }
-    paths.push("D:\\Projeto Fluxcodex\\ai-app-builder\\updater.json".into());
+    if cfg!(debug_assertions) {
+        paths.push("D:\\Projeto Fluxcodex\\ai-app-builder\\updater.json".into());
+    }
     paths.push("./updater.json".into());
     paths
 }
@@ -225,6 +227,13 @@ pub fn install_update(path: String) -> Result<String, String> {
             .get(&path)
             .send()
             .map_err(|e| format!("Falha ao baixar atualização: {}", e))?;
+
+        if !resp.status().is_success() {
+            return Err(format!(
+                "Falha ao baixar atualização: servidor retornou HTTP {}",
+                resp.status()
+            ));
+        }
 
         let temp_dir = std::env::temp_dir().join("ai-app-builder-update");
         fs::create_dir_all(&temp_dir).map_err(|e| format!("Falha ao criar diretório temporário: {}", e))?;

@@ -26,7 +26,7 @@ import { subagentManager } from './services/subagent-manager.js'
 import { devServerManager } from './services/dev-server-manager.js'
 import { supabaseManager } from './services/supabase-manager.js'
 import { prisma } from './lib/prisma.js'
-import { decryptKey, setHwid } from './lib/crypto.js'
+import { decryptKey, setHwid, generateHwid } from './lib/crypto.js'
 import { getNetworkStatus } from './lib/network.js'
 
 process.on('uncaughtException', (err) => {
@@ -97,6 +97,8 @@ async function loadKeysFromDb(): Promise<Record<string, string>> {
 }
 
 async function main() {
+  // Set HWID before loading keys so decryptKey works
+  setHwid(generateHwid())
   console.log(`[sidecar] Starting v${process.env.npm_package_version || '?'} on ${HOST}:${PORT}`)
   console.log(`[sidecar] CWD: ${process.cwd()}`)
   console.log(`[sidecar] Node: ${process.version}`)
