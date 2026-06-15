@@ -231,6 +231,8 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
     reply.raw.setHeader('Content-Type', 'text/event-stream')
     reply.raw.setHeader('Cache-Control', 'no-cache')
     reply.raw.setHeader('Connection', 'keep-alive')
+    reply.raw.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*')
+    reply.raw.setHeader('Access-Control-Allow-Credentials', 'true')
 
     const model = parsed.model || 'llama3-70b-8192'
     let ctx: Awaited<ReturnType<typeof buildContext>>

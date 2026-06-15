@@ -152,7 +152,8 @@ pub fn start_sidecar() -> Result<(), String> {
     } else {
         std::env::temp_dir()
     };
-    let db_url = format!("file:{}/aibuilder.db", db_dir.to_string_lossy());
+    let db_dir_str = db_dir.to_string_lossy().replace("\\", "/");
+    let db_url = format!("file:{}/aibuilder.db", db_dir_str);
 
     // Open log file for stderr capture
     let stderr_file = OpenOptions::new()
