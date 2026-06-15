@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react'
 import { useChatStore } from '@/stores/chat.store'
 import { useSettingsStore } from '@/stores/settings.store'
 import { useSkillsStore } from '@/stores/skills.store'
+import type { FileAttachment } from '@/types'
 
 const SIDECAR_URL = 'http://127.0.0.1:3001'
 
@@ -18,7 +19,7 @@ export function useStream() {
   const cancelRef = useRef(false)
   const { setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents } = useChatStore()
 
-  const sendMessage = useCallback(async (message: string, mode: string, conversationId: string, projectId: string) => {
+  const sendMessage = useCallback(async (message: string, mode: string, conversationId: string, projectId: string, files: FileAttachment[] = []) => {
     const activeModel = useSettingsStore.getState().activeModel
     const pinnedSkills = useSkillsStore.getState().pinned
     const allSkills = useSkillsStore.getState().available
@@ -56,22 +57,27 @@ export function useStream() {
         abortController.abort()
       }, 60_000)
 
+      const body: Record<string, unknown> = {
+        message,
+        mode: mode === 'agent' ? 'agent' : mode,
+        model: activeModel,
+        activeSkills: pinnedSkills.length > 0 ? activeSkills : [],
+        availableSkills: allSkills.map(s => ({
+          name: s.name,
+          description: s.description,
+          priority: s.priority,
+        })),
+        pinnedSkills,
+        projectId,
+      }
+      if (files.length > 0) {
+        body.files = files.map(f => ({ name: f.name, mimeType: f.mimeType, size: f.size, content: f.content }))
+      }
+
       const response = await fetch(`${SIDECAR_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message,
-          mode: mode === 'agent' ? 'agent' : mode,
-          model: activeModel,
-          activeSkills: pinnedSkills.length > 0 ? activeSkills : [],
-          availableSkills: allSkills.map(s => ({
-            name: s.name,
-            description: s.description,
-            priority: s.priority,
-          })),
-          pinnedSkills,
-          projectId,
-        }),
+        body: JSON.stringify(body),
         signal: abortController.signal,
       })
 

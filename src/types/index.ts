@@ -18,12 +18,20 @@ export interface Conversation {
   createdAt: string
 }
 
+export interface FileAttachment {
+  name: string
+  mimeType: string
+  size: number
+  content: string
+}
+
 export interface Message {
   id: string
   conversationId: string
   role: 'user' | 'assistant' | 'system' | 'tool'
   content: string
   metadata?: string
+  attachments?: FileAttachment[]
   createdAt: string
 }
 

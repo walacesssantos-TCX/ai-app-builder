@@ -27,6 +27,13 @@ interface ActiveSkill extends Skill {
   pinned?: boolean
 }
 
+interface BuildContextFile {
+  name: string
+  mimeType: string
+  size: number
+  content: string
+}
+
 export interface BuildContextInput {
   message: string
   project?: Project
@@ -35,6 +42,7 @@ export interface BuildContextInput {
   activeSkills: ActiveSkill[]
   openFiles?: Array<{ path: string; content: string }>
   schema?: string
+  files?: BuildContextFile[]
 }
 
 export interface BuildContextOutput {
@@ -260,12 +268,34 @@ export async function buildContext(input: BuildContextInput, basePrompt?: string
     }
   }
 
+  let fileContext = ''
+  if (input.files && input.files.length > 0) {
+    for (const file of input.files) {
+      const ext = file.name.split('.').pop()?.toLowerCase() || ''
+      const textExts = new Set(['txt', 'json', 'js', 'ts', 'jsx', 'tsx', 'py', 'rs', 'go', 'java', 'cs', 'sql', 'html', 'css', 'md', 'csv', 'xml', 'yaml', 'yml', 'sh', 'ps1', 'bat', 'env', 'ini', 'cfg', 'log', 'toml'])
+      const isText = textExts.has(ext) || file.mimeType.startsWith('text/')
+
+      if (isText) {
+        try {
+          const decoded = Buffer.from(file.content, 'base64').toString('utf-8')
+          fileContext += `\n\n### 📄 ${file.name}\n\`\`\`\n${decoded.slice(0, 10000)}\n\`\`\``
+        } catch {
+          fileContext += `\n\n### 📄 ${file.name}\n*[Não foi possível decodificar o conteúdo]*`
+        }
+      } else {
+        fileContext += `\n\n### ${file.name}\n- **Tipo:** ${file.mimeType}\n- **Tamanho:** ${(file.size / 1024).toFixed(1)} KB\n- *Este tipo de arquivo não pôde ser convertido para texto automaticamente. O assistente pode ajudar a processá-lo com ferramentas externas.*`
+      }
+    }
+  }
+
+  const userContent = fileContext ? `${input.message}\n\n---\n## Arquivos Anexados${fileContext}` : input.message
+
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
     ...input.history.map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
-    { role: 'user', content: input.message },
+    { role: 'user', content: userContent },
   ]
 
   return {

@@ -24,6 +24,13 @@ const activeSkillSchema = z.object({
   tools: z.array(toolDefSchema).optional(),
 })
 
+const fileSchema = z.object({
+  name: z.string(),
+  mimeType: z.string(),
+  size: z.number(),
+  content: z.string(),
+})
+
 const chatSchema = z.object({
   message: z.string().min(1),
   projectId: z.string().optional(),
@@ -33,6 +40,7 @@ const chatSchema = z.object({
   activeSkills: z.array(activeSkillSchema).optional(),
   availableSkills: z.array(z.object({ name: z.string(), description: z.string(), priority: z.number() })).optional(),
   pinnedSkills: z.array(z.string()).optional(),
+  files: z.array(fileSchema).optional(),
 })
 
 const DANGEROUS_PATTERNS = [
@@ -226,7 +234,7 @@ Formate sua resposta com:
 export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown): void {
   fastify.post('/chat', async (req, reply) => {
     const parsed = chatSchema.parse(req.body)
-    let { message, mode, activeSkills, projectId, availableSkills, pinnedSkills } = parsed
+    let { message, mode, activeSkills, projectId, availableSkills, pinnedSkills, files } = parsed
 
     reply.raw.setHeader('Content-Type', 'text/event-stream')
     reply.raw.setHeader('Cache-Control', 'no-cache')
@@ -246,6 +254,7 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
           history: [],
           activeSkills: activeSkills || [],
           projectPath: projectId,
+          files: files || [],
         }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('buildContext excedeu o limite de 15s')), 15_000)
@@ -283,6 +292,7 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
             message,
             history: [],
             activeSkills: activeSkills || [],
+            files: files || [],
           },
           onEvent: () => {},
           requestConfirmation: async (command: string) => !requiresConfirmation(command),

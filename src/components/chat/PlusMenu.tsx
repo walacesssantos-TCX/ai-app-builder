@@ -1,7 +1,44 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Upload, Puzzle, FileText } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Plus, Upload, Puzzle, FileText, X, FileIcon } from 'lucide-react'
 import { useChatStore } from '@/stores/chat.store'
+import type { FileAttachment } from '@/types'
+
+const TEXT_EXTENSIONS = new Set(['txt', 'json', 'js', 'ts', 'jsx', 'tsx', 'py', 'rs', 'go', 'java', 'cs', 'sql', 'html', 'css', 'md', 'csv', 'xml', 'yaml', 'yml', 'sh', 'ps1', 'bat', 'env', 'ini', 'cfg', 'log', 'toml', 'lock'])
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'])
+const AUDIO_EXTENSIONS = new Set(['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'wma'])
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'avi', 'mov', 'mkv', 'flv'])
+const DOC_EXTENSIONS = new Set(['pdf', 'docx', 'doc', 'xlsx', 'pptx'])
+
+const ALLOWED_EXTENSIONS = [...TEXT_EXTENSIONS, ...IMAGE_EXTENSIONS, ...AUDIO_EXTENSIONS, ...VIDEO_EXTENSIONS, ...DOC_EXTENSIONS].join(',')
+
+function getFileIcon(mimeType: string, name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  if (IMAGE_EXTENSIONS.has(ext)) return '🖼️'
+  if (AUDIO_EXTENSIONS.has(ext)) return '🎵'
+  if (VIDEO_EXTENSIONS.has(ext)) return '🎬'
+  if (ext === 'pdf') return '📄'
+  if (ext === 'docx' || ext === 'doc') return '📝'
+  if (TEXT_EXTENSIONS.has(ext)) return '📃'
+  return '📎'
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      resolve(result.split(',')[1])
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
 
 interface PlusMenuProps {
   conversationId: string | null
@@ -15,7 +52,7 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ref = useRef<HTMLDivElement>(null)
   const contextRef = useRef<HTMLTextAreaElement>(null)
-  const { addMessage } = useChatStore()
+  const { addPendingFile, pendingFiles, removePendingFile } = useChatStore()
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -42,22 +79,24 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const text = await file.text()
-    const convId = conversationId || crypto.randomUUID()
-    addMessage({
-      id: crypto.randomUUID(),
-      conversationId: convId,
-      role: 'system',
-      content: `[Upload: ${file.name}]\n\`\`\`\n${text.slice(0, 5000)}\n\`\`\``,
-      createdAt: new Date().toISOString(),
-    })
+    try {
+      const content = await readFileAsBase64(file)
+      addPendingFile({
+        name: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        size: file.size,
+        content,
+      })
+    } catch {
+      // ignore read errors
+    }
     if (e.target) e.target.value = ''
   }
 
   const handleAddContext = () => {
     if (!contextText.trim()) return
     const convId = conversationId || crypto.randomUUID()
-    addMessage({
+    useChatStore.getState().addMessage({
       id: crypto.randomUUID(),
       conversationId: convId,
       role: 'system',
@@ -80,8 +119,30 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
         ref={fileInputRef}
         type="file"
         className="hidden"
+        accept={ALLOWED_EXTENSIONS}
         onChange={handleFileChange}
       />
+
+      {pendingFiles.length > 0 && (
+        <div className="absolute bottom-full left-0 mb-2 flex flex-wrap gap-1.5 max-w-[300px]">
+          {pendingFiles.map((f, i) => (
+            <div
+              key={`${f.name}-${i}`}
+              className="flex items-center gap-1.5 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-xs"
+            >
+              <span className="text-[11px]">{getFileIcon(f.mimeType, f.name)}</span>
+              <span className="text-zinc-300 truncate max-w-[100px]">{f.name}</span>
+              <span className="text-zinc-500 shrink-0">{formatSize(f.size)}</span>
+              <button
+                onClick={() => removePendingFile(f.name)}
+                className="text-zinc-500 hover:text-zinc-300 ml-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <button
         onClick={() => setOpen(!open)}

@@ -1,11 +1,11 @@
 {
-  "version": "0.1.31",
-  "notes": "Modelo padrão atualizado: llama3-70b-8192 foi descontinuado pela Groq. Substituído por llama-3.3-70b-versatile.",
-  "pub_date": "2026-06-15T23:30:00Z",
+  "version": "0.1.32",
+  "notes": "Upload de arquivos reformulado: suporte a WAV, MP3, MP4, PDF, DOCX, imagens e textos. Arquivos são lidos corretamente (FileReader base64) e enviados ao LLM como contexto.",
+  "pub_date": "2026-06-16T00:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.31/AI.App.Builder.Studio_0.1.31_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.32/AI.App.Builder.Studio_0.1.32_x64-setup.exe"
     }
   }
 }

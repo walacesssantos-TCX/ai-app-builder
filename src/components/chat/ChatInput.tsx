@@ -26,7 +26,10 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
 
   const handleSend = async () => {
     try {
-      if (!input.trim() || isStreaming) return
+      const { pendingFiles, clearPendingFiles } = useChatStore.getState()
+      const hasFiles = pendingFiles.length > 0
+      if (!input.trim() && !hasFiles) return
+      if (isStreaming) return
 
       const msg = input.trim()
 
@@ -43,8 +46,10 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
       }
 
       setInput('')
+      const files = [...pendingFiles]
+      clearPendingFiles()
 
-      await sendMessage(msg, mode, convId, '')
+      await sendMessage(msg, mode, convId, '', files)
     } catch (err) {
       console.error('[ChatInput] handleSend error:', err)
     }

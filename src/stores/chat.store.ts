@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Message, Conversation, ChatMode, AgentEvent } from '@/types'
+import type { Message, FileAttachment, Conversation, ChatMode, AgentEvent } from '@/types'
 
 interface ChatStore {
   conversations: Conversation[]
@@ -12,6 +12,7 @@ interface ChatStore {
   isAgentRunning: boolean
   compact: boolean
   totalTokens: number
+  pendingFiles: FileAttachment[]
 
   setConversations: (conversations: Conversation[]) => void
   setActiveConversation: (id: string | null) => void
@@ -27,6 +28,9 @@ interface ChatStore {
   toggleCompact: () => void
   addTokens: (count: number) => void
   resetTokens: () => void
+  addPendingFile: (file: FileAttachment) => void
+  removePendingFile: (name: string) => void
+  clearPendingFiles: () => void
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -40,6 +44,7 @@ export const useChatStore = create<ChatStore>((set) => ({
   isAgentRunning: false,
   compact: false,
   totalTokens: 0,
+  pendingFiles: [],
 
   setConversations: (conversations) => set({ conversations }),
 
@@ -93,4 +98,12 @@ export const useChatStore = create<ChatStore>((set) => ({
     set((state) => ({ totalTokens: state.totalTokens + count })),
 
   resetTokens: () => set({ totalTokens: 0 }),
+
+  addPendingFile: (file) =>
+    set((state) => ({ pendingFiles: [...state.pendingFiles, file] })),
+
+  removePendingFile: (name) =>
+    set((state) => ({ pendingFiles: state.pendingFiles.filter(f => f.name !== name) })),
+
+  clearPendingFiles: () => set({ pendingFiles: [] }),
 }))
