@@ -238,12 +238,17 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
     let totalOutput = 0
 
     try {
-      ctx = await buildContext({
-        message,
-        history: [],
-        activeSkills: activeSkills || [],
-        projectPath: projectId,
-      })
+      ctx = await Promise.race([
+        buildContext({
+          message,
+          history: [],
+          activeSkills: activeSkills || [],
+          projectPath: projectId,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('buildContext excedeu o limite de 15s')), 15_000)
+        ),
+      ])
 
       // Auto-trigger de skills (Spec §4.2) — inside try-catch to avoid hanging
       if (availableSkills && availableSkills.length > 0 && (!activeSkills || activeSkills.length === 0)) {

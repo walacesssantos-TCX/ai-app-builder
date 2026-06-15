@@ -14,7 +14,7 @@ let _available: boolean | null = null
 export async function isRtkAvailable(): Promise<boolean> {
   if (_available !== null) return _available
   try {
-    await execFileAsync(RTK_BIN, ['--version'])
+    await execFileAsync(RTK_BIN, ['--version'], { timeout: 3000 })
     _available = true
   } catch {
     _available = false
@@ -30,6 +30,7 @@ export async function compressText(text: string, level: 'minimal' | 'aggressive'
     await writeFile(tmpFile, text, 'utf-8')
     const { stdout } = await execFileAsync(RTK_BIN, ['read', `--level=${level}`, tmpFile], {
       maxBuffer: 10 * 1024 * 1024,
+      timeout: 10_000,
     })
     return stdout.trim() || text
   } catch {
