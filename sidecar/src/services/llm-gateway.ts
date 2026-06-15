@@ -41,6 +41,7 @@ class AnthropicProvider implements LLMProvider {
         messages: req.messages,
         stream: true,
       }),
+      signal: AbortSignal.timeout(120_000),
     })
 
     if (!response.ok) {
@@ -122,6 +123,7 @@ class OpenAIProvider implements LLMProvider {
         stream: true,
         stream_options: { include_usage: true },
       }),
+      signal: AbortSignal.timeout(120_000),
     })
 
     if (!response.ok) {
@@ -268,20 +270,20 @@ class GeminiProvider implements LLMProvider {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: req.messages.map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }],
-          })),
-          systemInstruction: req.systemPrompt ? {
-            parts: [{ text: req.systemPrompt }],
-          } : undefined,
-          generationConfig: {
-            maxOutputTokens: req.maxTokens ?? 8192,
-          },
-        }),
-      }
-    )
+      body: JSON.stringify({
+        contents: req.messages.map(m => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }],
+        })),
+        systemInstruction: req.systemPrompt ? {
+          parts: [{ text: req.systemPrompt }],
+        } : undefined,
+        generationConfig: {
+          maxOutputTokens: req.maxTokens ?? 8192,
+        },
+      }),
+      signal: AbortSignal.timeout(120_000),
+    })
 
     if (!response.ok) {
       throw new Error(`Gemini API error: ${response.status} ${await response.text()}`)
@@ -382,6 +384,7 @@ class CohereProvider implements LLMProvider {
         max_tokens: req.maxTokens ?? 8192,
         stream: true,
       }),
+      signal: AbortSignal.timeout(120_000),
     })
 
     if (!response.ok) {

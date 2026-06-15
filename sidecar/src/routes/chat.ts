@@ -232,35 +232,36 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
     reply.raw.setHeader('Cache-Control', 'no-cache')
     reply.raw.setHeader('Connection', 'keep-alive')
 
-    // Auto-trigger de skills (Spec §4.2)
-    if (availableSkills && availableSkills.length > 0 && (!activeSkills || activeSkills.length === 0)) {
-      const { selected } = await scoreSkills(
-        message,
-        availableSkills.map(s => ({ name: s.name, description: s.description, priority: s.priority })),
-        pinnedSkills || [],
-        3,
-        getCurrentGateway()
-      )
-
-      if (selected.length > 0 && (!activeSkills || activeSkills.length === 0)) {
-        reply.raw.write(`data: ${JSON.stringify({ type: 'skill_auto_trigger', skills: selected })}\n\n`)
-      }
-
-      reply.raw.write(`data: ${JSON.stringify({ type: 'active_skills', skills: selected })}\n\n`)
-    }
-
-    const ctx = await buildContext({
-      message,
-      history: [],
-      activeSkills: activeSkills || [],
-      projectPath: projectId,
-    })
-
     const model = parsed.model || 'llama3-70b-8192'
+    let ctx: Awaited<ReturnType<typeof buildContext>>
     let totalInput = 0
     let totalOutput = 0
 
     try {
+      ctx = await buildContext({
+        message,
+        history: [],
+        activeSkills: activeSkills || [],
+        projectPath: projectId,
+      })
+
+      // Auto-trigger de skills (Spec §4.2) — inside try-catch to avoid hanging
+      if (availableSkills && availableSkills.length > 0 && (!activeSkills || activeSkills.length === 0)) {
+        const { selected } = await scoreSkills(
+          message,
+          availableSkills.map(s => ({ name: s.name, description: s.description, priority: s.priority })),
+          pinnedSkills || [],
+          3,
+          getCurrentGateway()
+        )
+
+        if (selected.length > 0 && (!activeSkills || activeSkills.length === 0)) {
+          reply.raw.write(`data: ${JSON.stringify({ type: 'skill_auto_trigger', skills: selected })}\n\n`)
+        }
+
+        reply.raw.write(`data: ${JSON.stringify({ type: 'active_skills', skills: selected })}\n\n`)
+      }
+
       if (mode === 'agent') {
         const tools = createTools(projectId ? undefined : undefined)
 
