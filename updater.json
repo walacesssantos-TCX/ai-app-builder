@@ -1,11 +1,11 @@
 {
-  "version": "0.1.20",
-  "notes": "Sidecar: log para %TEMP%\\aibuilder-sidecar.log, health check 15s, detecção de processo morto, EADDRINUSE detectado. Frontend: retry kill+before start, delay inicial 2s. Update agora via GitHub Releases.",
-  "pub_date": "2026-06-15T12:00:00Z",
+  "version": "0.1.21",
+  "notes": "Fix: gateway agora sempre atual (getCurrentGateway), update flow split (download sem fechar app), v0.1.20 -> v0.1.21 release.",
+  "pub_date": "2026-06-15T18:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.20/AI.App.Builder.Studio_0.1.20_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.21/AI.App.Builder.Studio_0.1.21_x64-setup.exe"
     }
   }
 }
