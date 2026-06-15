@@ -109,7 +109,14 @@ fn get_resource_updater_path(app: &AppHandle) -> Option<String> {
 pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, String> {
     let current_version = env!("CARGO_PKG_VERSION");
 
-    // 1. Check local paths
+    // 1. GitHub releases first (primary source)
+    match check_github_release(current_version) {
+        Ok(Some(info)) => return Ok(Some(info)),
+        Ok(None) => {}
+        Err(e) => eprintln!("[updater] GitHub check failed: {}", e),
+    }
+
+    // 2. Fallback: local updater.json files (dev/test)
     let mut paths = get_default_updater_paths();
     if let Some(resource_path) = get_resource_updater_path(&app) {
         paths.insert(0, resource_path);
@@ -120,10 +127,15 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
             continue;
         }
 
-        let content = fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+        let content = match fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
         let content = strip_bom(&content);
-        let manifest: UpdaterManifest =
-            serde_json::from_str(content).map_err(|e| format!("Invalid updater.json: {}", e))?;
+        let manifest: UpdaterManifest = match serde_json::from_str(content) {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
 
         if !is_newer(&manifest.version, current_version) {
             continue;
@@ -134,11 +146,12 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
             .keys()
             .find(|k| k.contains("windows"));
 
-        if win_key_option.is_none() {
-            continue;
-        }
+        let win_key = match win_key_option {
+            Some(k) => k,
+            None => continue,
+        };
 
-        let entry = &manifest.platforms[win_key_option.unwrap()];
+        let entry = &manifest.platforms[win_key];
         let installer_path = if entry.url.starts_with("http://") || entry.url.starts_with("https://") {
             entry.url.clone()
         } else {
@@ -150,13 +163,6 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
             notes: manifest.notes.unwrap_or_default(),
             installer_path,
         }));
-    }
-
-    // 2. Check GitHub releases
-    match check_github_release(current_version) {
-        Ok(Some(info)) => return Ok(Some(info)),
-        Ok(None) => {}
-        Err(e) => eprintln!("[updater] GitHub check failed: {}", e),
     }
 
     Ok(None)

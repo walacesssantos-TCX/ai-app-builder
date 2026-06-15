@@ -4,13 +4,14 @@ import { api } from '@/lib/api'
 
 export type SidecarStatus = 'connecting' | 'online' | 'offline' | 'starting'
 
-const MAX_RETRIES = 30
+const MAX_RETRIES = 45
 const RETRY_INTERVAL = 1000
 
 export function useSidecarStatus() {
   const [status, setStatus] = useState<SidecarStatus>('connecting')
   const [retryCount, setRetryCount] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startedOnce = useRef(false)
 
   const checkAndStart = useCallback(async () => {
     try {
@@ -26,6 +27,14 @@ export function useSidecarStatus() {
     }
   }, [])
 
+  const stopSidecar = useCallback(async () => {
+    try {
+      await invoke('stop_sidecar')
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const startSidecar = useCallback(async () => {
     try {
       await invoke('start_sidecar')
@@ -36,6 +45,7 @@ export function useSidecarStatus() {
 
   useEffect(() => {
     let attempts = 0
+    let initialDelay = false
 
     const poll = async () => {
       const ok = await checkAndStart()
@@ -44,10 +54,16 @@ export function useSidecarStatus() {
       attempts++
       setRetryCount(attempts)
 
-      if (attempts === 1) {
+      if (!initialDelay) {
+        initialDelay = true
+        // Give the auto-start from lib.rs a head start before we try
+        return
+      }
+
+      if (!startedOnce.current) {
+        startedOnce.current = true
         setStatus('starting')
         await startSidecar()
-        // wait a bit before next attempt
         return
       }
 
@@ -63,12 +79,14 @@ export function useSidecarStatus() {
       setStatus('connecting')
     }
 
-    // Immediate first check
-    poll()
-
-    intervalRef.current = setInterval(poll, RETRY_INTERVAL)
+    // Wait 2s before first poll to let auto-start in lib.rs initialize
+    const initialTimer = setTimeout(() => {
+      poll()
+      intervalRef.current = setInterval(poll, RETRY_INTERVAL)
+    }, 2000)
 
     return () => {
+      clearTimeout(initialTimer)
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
         intervalRef.current = null
@@ -76,21 +94,33 @@ export function useSidecarStatus() {
     }
   }, [checkAndStart, startSidecar])
 
-  const retry = useCallback(() => {
-    setStatus('connecting')
+  const retry = useCallback(async () => {
+    setStatus('starting')
     setRetryCount(0)
+    startedOnce.current = false
 
-    const poll = async () => {
+    // Kill any stale sidecar before restarting
+    await stopSidecar()
+    // Small delay for port to release
+    await new Promise(r => setTimeout(r, 500))
+    await startSidecar()
+
+    // Start polling
+    let attempts = 0
+    const iv = setInterval(async () => {
       const ok = await checkAndStart()
-      if (ok) return
-
-      setRetryCount((c) => c + 1)
-      setStatus('starting')
-      await startSidecar()
-    }
-
-    poll()
-  }, [checkAndStart, startSidecar])
+      if (ok) {
+        clearInterval(iv)
+        return
+      }
+      attempts++
+      setRetryCount(attempts)
+      if (attempts >= MAX_RETRIES) {
+        setStatus('offline')
+        clearInterval(iv)
+      }
+    }, RETRY_INTERVAL)
+  }, [checkAndStart, startSidecar, stopSidecar])
 
   return { status, retryCount, retry }
 }

@@ -19,6 +19,7 @@
       ]
     },
     "shell:allow-spawn",
-    "process:allow-relaunch"
+    "process:allow-restart",
+    "process:allow-exit"
   ]
 }

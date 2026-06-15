@@ -29,6 +29,13 @@ import { prisma } from './lib/prisma.js'
 import { decryptKey, setHwid } from './lib/crypto.js'
 import { getNetworkStatus } from './lib/network.js'
 
+process.on('uncaughtException', (err) => {
+  console.error('[sidecar] UNCAUGHT EXCEPTION:', err)
+})
+process.on('unhandledRejection', (reason) => {
+  console.error('[sidecar] UNHANDLED REJECTION:', reason)
+})
+
 const PORT = parseInt(process.env.PORT || '3001', 10)
 const HOST = process.env.HOST || '127.0.0.1'
 
@@ -39,16 +46,36 @@ function runMigrations() {
   const schemaPath = path.resolve(__dirname, '../prisma/schema.prisma')
   const require = createRequire(import.meta.url)
   const prismaCli = path.resolve(__dirname, '../node_modules/prisma/build/index.js')
+  const dbPath = path.resolve(__dirname, '../prisma/aibuilder.db')
+
   console.log('[sidecar] Running prisma db push...')
   console.log(`[sidecar] Schema: ${schemaPath}`)
+  console.log(`[sidecar] DB file: ${dbPath}`)
+
+  const fs = require('fs') as typeof import('fs')
+  if (fs.existsSync(dbPath)) {
+    const size = fs.statSync(dbPath).size
+    console.log(`[sidecar] DB size: ${(size / 1024).toFixed(1)} KB`)
+  } else {
+    console.log('[sidecar] DB file does not exist yet — will be created')
+  }
+
   try {
-    execSync(`node "${prismaCli}" db push --schema="${schemaPath}" --skip-generate --accept-data-loss`, {
+    const result = execSync(`node "${prismaCli}" db push --schema="${schemaPath}" --skip-generate --accept-data-loss`, {
       cwd: path.resolve(__dirname, '..'),
       stdio: 'pipe',
+      timeout: 30_000,
     })
     console.log('[sidecar] Database migrated successfully')
-  } catch (e) {
-    console.error('[sidecar] Migration failed:', e)
+    if (result.toString().trim()) {
+      console.log(`[sidecar] Migration output: ${result.toString().trim().slice(0, 200)}`)
+    }
+  } catch (e: unknown) {
+    const err = e as { stdout?: Buffer; stderr?: Buffer; message?: string; status?: number }
+    console.error('[sidecar] Migration FAILED:')
+    if (err.stdout?.toString().trim()) console.error('  stdout:', err.stdout.toString().trim().slice(0, 500))
+    if (err.stderr?.toString().trim()) console.error('  stderr:', err.stderr.toString().trim().slice(0, 500))
+    if (err.message) console.error('  message:', err.message)
   }
 }
 
@@ -70,6 +97,11 @@ async function loadKeysFromDb(): Promise<Record<string, string>> {
 }
 
 async function main() {
+  console.log(`[sidecar] Starting v${process.env.npm_package_version || '?'} on ${HOST}:${PORT}`)
+  console.log(`[sidecar] CWD: ${process.cwd()}`)
+  console.log(`[sidecar] Node: ${process.version}`)
+  console.log(`[sidecar] Platform: ${process.platform} ${process.arch}`)
+
   runMigrations()
   const fastify = Fastify({
     logger: {
@@ -176,8 +208,17 @@ async function main() {
 
   try {
     await fastify.listen({ port: PORT, host: HOST })
+    console.log(`[sidecar] ✓ Ready at http://${HOST}:${PORT}`)
     fastify.log.info(`Sidecar running at http://${HOST}:${PORT}`)
-  } catch (err) {
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    console.error(`[sidecar] ✗ FAILED to listen on ${HOST}:${PORT}`)
+    if (e.code === 'EADDRINUSE') {
+      console.error(`[sidecar]   → Port ${PORT} is already in use by another process`)
+      console.error(`[sidecar]   → Kill the other process or change PORT env var`)
+    } else {
+      console.error(`[sidecar]   → ${e.code || ''} ${e.message || err}`)
+    }
     fastify.log.error(err)
     process.exit(1)
   }

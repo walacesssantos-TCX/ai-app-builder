@@ -1,18 +1,18 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.15** — última atualização: `2026-06-12T15:00:00Z`
+**v0.1.20** — última atualização: `2026-06-15T12:00:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
 - Sidecar Node.js (Fastify) em `sidecar/`, roda em `http://localhost:3001`
 - Vite dev server em `http://localhost:1420`
-- RTK (Rust Token Killer) global em `C:\Users\walace\.local\bin\rtk.exe`
+- RTK (Rust Token Killer) ativo via hook global
 - Instaladores: MSI + NSIS em `src-tauri/target/release/bundle/`
 - Chave de assinatura em `~\.tauri\ai-updater.key`
 - Prisma + SQLite (`aibuilder.db`) no sidecar
-- Modelo local: `qwen3.5:4b` (3.38GB GGUF) com `OLLAMA_DISABLE_GPU=1`
-- Ollama global em `C:\Users\walace\AppData\Local\Programs\Ollama\`
+- Ollama removido (v0.1.19) — app 100% API-based (Groq, Anthropic, OpenAI, Gemini)
+- Sidecar com log para `%TEMP%\aibuilder-sidecar.log`
 
 ## O que foi implementado até v0.1.12
 
@@ -34,23 +34,13 @@
 - Descoberta em 3 níveis: projeto → global (`~/.aibuilder/skills`) → built-in
 - Frontend: `SkillsList`, `SkillCard`, `skills.store` com seed + pin/activate
 
-### Gateway Cloud Nativo (Rust)
-- `llm_gateway.rs`: suporte nativo a Anthropic (SSE), OpenAI-compatível (DeepSeek, Mistral, Groq, OpenRouter), Gemini (streamGenerateContent)
-- `cloud_chat_completion` + `cloud_models` Tauri commands
-- Leitura de API keys do SQLite com decriptação AES-256-GCM (shared key com `sidecar/src/lib/crypto.ts`)
-- Sidecar auto-start via `setup()` em thread separada
+### Gateway Cloud Nativo (Rust) — removido em v0.1.19
+- `llm_gateway.rs` + `ai.rs` removidos, todo chat agora via sidecar Node.js
 
-### Modelo Nativo GGUF (Native Model)
-- `find_native_blob()`: busca automática por arquivos GGUF >10MB em `Documents/blobs/`
-- `ensure_native_model()`: cria modelo Ollama a partir de GGUF local com Modelfile
-- Suporte a `qwen3.5:4b` e alias `fluxcodex-qwen35-native`
-- CPU-only (`OLLAMA_DISABLE_GPU=1`) para evitar Vulkan OOM
-
-### Auto-Update (v0.1.5+)
-- `updater.rs`: `check_local_update` (lê `updater.json` local) + `install_update` (spawn installer `/S /RUN` + exit(0))
+### Auto-Update (v0.1.5+ → v0.1.19)
+- `updater.rs`: `check_local_update` + `check_github_release` + `install_update`
 - `get_app_version` command
 - Frontend: `UpdateSection.tsx` com Verificar + Baixar & Instalar
-- `tauri.conf.json`: plugin registrado no Rust
 
 ## Histórico de versões e correções
 
@@ -72,6 +62,28 @@
 - **Cloud model fix**: `settings.store.ts` — `partialize` removia forcava fallback para modelo local se cloud
 - **Update detectável**: resource bundled com v0.1.15, dev path com v0.1.14 para trigger do update
 
+### v0.1.19 — Ollama removido, GitHub Releases updater, Cohere adicionado
+- **Ollama removido** do bundle e do código — app 100% API-based
+- `ai.rs` (402 linhas), `llm_gateway.rs` (559 linhas), `ollama.ts` (201 linhas) removidos
+- Todo chat agora passa exclusivamente pelo sidecar Node.js
+- **GitHub Releases updater**: `check_github_release()` baixa manifest do GitHub
+- **CohereProvider** adicionado ao LLM gateway do sidecar
+- **Updater flow**: download → verify → install → relaunch com mensagem de reinício
+- Sidecar build fix: `tsc` compila antes do `tauri build`
+
+### v0.1.20 — Sidecar: diagnóstico, robustez e logging
+- **Log de startup**: stdout/stderr do sidecar vão para `%TEMP%\aibuilder-sidecar.log`
+- **Health check aumentado**: 4s → 15s para dar tempo de Prisma migration
+- **Detecção de processo morto**: `try_wait()` antes de rejeitar restart
+- **`is_sidecar_running`** agora verifica child process além do TCP
+- **Frontend**: delay inicial de 2s para evitar race com auto-start do `lib.rs`
+- **Frontend**: `retry()` agora mata o sidecar antes de reiniciar
+- **Frontend**: timeout de conexão aumentado de 30s para 45s
+- **Capabilities fix**: `process:allow-relaunch` → `process:allow-restart`
+- **Sidecar**: logs detalhados de migration (caminhos, tamanho DB, output)
+- **Sidecar**: mensagem `EADDRINUSE` específica se porta 3001 ocupada
+- **Sidecar**: handlers globais `uncaughtException` + `unhandledRejection`
+
 ### v0.1.15 — Cancel durante setup + Timeout (correção de bugs do v0.1.14)
 - **`reset_cancel()` no início**: antes estava DEPOIS do setup (linha 338) — se usuário clicasse Stop durante `ensure_native_model` (>30s), a flag era limpa pelo `reset_cancel()` posterior, perdendo o stop
 - **`is_cancelled()` check no setup**: adicionado check depois de `ensure_native_model` e antes da API call, tanto em `chat_completion` quanto `cloud_chat_completion`
@@ -84,12 +96,14 @@
 | v0.1.12 | — | Anterior |
 | v0.1.13 | NSIS + MSI assinados | Buildado |
 | v0.1.14 | NSIS + MSI | Buildado (bugs: stop e timeout) |
-| v0.1.15 | NSIS + MSI | **Atual** |
+| v0.1.15 | NSIS + MSI | Buildado |
+| v0.1.19 | NSIS + MSI | Buildado (Ollama removido, GitHub updater) |
+| v0.1.20 | — | **Atual** (sidecar logging + robustez) |
 
 ## Estratégia de Update
-- **Resource bundled**: `updater.json` aponta para PRÓXIMA versão (ex: v0.1.15 resource tem v0.1.16)
-- **Dev path**: `D:\Projeto Fluxcodex\ai-app-builder\updater.json` aponta para versão corrente (v0.1.15)
-- App instalado (ex: v0.1.14) detecta v0.1.15 via dev path → trigger de update
+- **Resource bundled**: `updater.json` aponta para PRÓXIMA versão
+- **Dev path**: `D:\Projeto Fluxcodex\ai-app-builder\updater.json` aponta para versão corrente
+- **GitHub Releases**: updater também consulta `github.com/walacesssantos-TCX/ai-app-builder/releases`
 
 ## Comandos úteis
 ```powershell

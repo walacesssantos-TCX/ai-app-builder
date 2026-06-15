@@ -1,11 +1,11 @@
 {
-  "version": "0.1.19",
-  "notes": "Remoção completa do Ollama nativo, agora 100% API-based. Corrigido bug 'Failed to fetch' no sidecar. Redesign visual completo.",
-  "pub_date": "2026-06-13T12:00:00Z",
+  "version": "0.1.20",
+  "notes": "Sidecar: log para %TEMP%\\aibuilder-sidecar.log, health check 15s, detecção de processo morto, EADDRINUSE detectado. Frontend: retry kill+before start, delay inicial 2s. Update agora via GitHub Releases.",
+  "pub_date": "2026-06-15T12:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.19/AI.App.Builder.Studio_0.1.19_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.20/AI.App.Builder.Studio_0.1.20_x64-setup.exe"
     }
   }
 }
