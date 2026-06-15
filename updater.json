@@ -1,11 +1,11 @@
 {
-  "version": "0.1.28",
-  "notes": "Correção crítica no chat: isStreaming não travava mais após erro de conexão, fallback UUID para ambientes sem crypto.randomUUID(), loop SSE [DONE] corrigido, handleSend com try-catch para evitar unhandled rejections.",
-  "pub_date": "2026-06-15T22:00:00Z",
+  "version": "0.1.29",
+  "notes": "Correção crítica: mensagens do usuário não chegavam ao LLM (buildContext ignorava input.message), resultando em resposta vazia no Gemini e perda de contexto nos demais provedores.",
+  "pub_date": "2026-06-15T22:30:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.28/AI.App.Builder.Studio_0.1.28_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.29/AI.App.Builder.Studio_0.1.29_x64-setup.exe"
     }
   }
 }
