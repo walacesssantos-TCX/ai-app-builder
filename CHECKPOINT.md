@@ -1,7 +1,7 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.20** — última atualização: `2026-06-15T12:00:00Z`
+**v0.1.25** — última atualização: `2026-06-15T20:00:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
@@ -44,51 +44,34 @@
 
 ## Histórico de versões e correções
 
-### v0.1.13 — Pipeline de Update + Ollama 500
-- **Code Review** no pipeline de update, 3 bugs corrigidos:
-  - `generate-updater.ps1`: installer path hardcoded como `0.1.0`
-  - `serve-update-local.ps1`: mesmo bug
-  - `updater.rs`: `resolve_installer_path()` com url-decode, `file:///` prefix, converte `/`→`\`
-- **BOM fix**: `generate-updater.ps1` trocado de `Out-File -Encoding UTF8` (com BOM) para `[System.IO.File]::WriteAllText` (UTF-8 sem BOM) — BOM quebrava `serde_json::from_str()`
-- **Ollama 500 fix** (`llama-server.exe` faltando):
-  - Bundled `lib/ollama/` com `llama-server.exe` + DLLs CPU (37MB)
-  - GPU backends removidos do bundle (`cuda_v12`, `cuda_v13`, `rocm_v7_1`, `vulkan`) — 3GB→37MB (NSIS <2GB)
-  - `find_ollama_executable()` prioriza global install sobre bundle
-  - Error handler inclui `response.text().await` no log
-- **Code review + correções** em `runner.rs` (timeout REAL com polling `try_wait()` + `kill()`), `example-plugin.md` (`TOOL_USERNAME`), `agent-engine.ts` (env vars `TOOL_X` em vez de args concatenados)
+### v0.1.21 → v0.1.25 — Correções de timeout, HWID, update e chat resiliente
 
-### v0.1.14 — Stop Button + Modelos Cloud + Update Detectável
-- **Stop real do chat**: `cancel_chat` Tauri command com `AtomicBool` global `CHAT_CANCELLED`, verificado nos 4 streaming loops (Ollama, Anthropic, OpenAI, Gemini)
-- **Cloud model fix**: `settings.store.ts` — `partialize` removia forcava fallback para modelo local se cloud
-- **Update detectável**: resource bundled com v0.1.15, dev path com v0.1.14 para trigger do update
+**Causa raiz do "Failed to fetch":**
+- `buildContext()` chamava `execFileAsync('rtk', ['--version'])` sem timeout — se `rtk` trava, handler congela sem resposta, browser fecha conexão → "Failed to fetch"
+- Mesmo paradigma: `compressText()` sem timeout no `rtk read`
 
-### v0.1.19 — Ollama removido, GitHub Releases updater, Cohere adicionado
-- **Ollama removido** do bundle e do código — app 100% API-based
-- `ai.rs` (402 linhas), `llm_gateway.rs` (559 linhas), `ollama.ts` (201 linhas) removidos
-- Todo chat agora passa exclusivamente pelo sidecar Node.js
-- **GitHub Releases updater**: `check_github_release()` baixa manifest do GitHub
-- **CohereProvider** adicionado ao LLM gateway do sidecar
-- **Updater flow**: download → verify → install → relaunch com mensagem de reinício
-- Sidecar build fix: `tsc` compila antes do `tauri build`
+**Causa raiz da chave API não persistir:**
+- Chaves eram criptografadas com HWID do Rust (`COMPUTERNAME|windows|x86_64|USERNAME` → SHA-256)
+- `generateHwid()` no Node.js usava `os.platform()` = `"win32"` (Rust: `"windows"`), `process.arch` = `"x64"` (Rust: `"x86_64"`), fallback `'unknown'` (Rust: `''`)
+- Hashes diferentes → `deriveKey()` produzia chave AES diferente → `decryptKey()` falhava → gateway sem provider → modelos vazios + chat quebrado
+- HWID era setado APÓS `loadKeysFromDb()` (via frontend POST `/hwid`) — startup descriptografava com fallback fixo
 
-### v0.1.20 — Sidecar: diagnóstico, robustez e logging
-- **Log de startup**: stdout/stderr do sidecar vão para `%TEMP%\aibuilder-sidecar.log`
-- **Health check aumentado**: 4s → 15s para dar tempo de Prisma migration
-- **Detecção de processo morto**: `try_wait()` antes de rejeitar restart
-- **`is_sidecar_running`** agora verifica child process além do TCP
-- **Frontend**: delay inicial de 2s para evitar race com auto-start do `lib.rs`
-- **Frontend**: `retry()` agora mata o sidecar antes de reiniciar
-- **Frontend**: timeout de conexão aumentado de 30s para 45s
-- **Capabilities fix**: `process:allow-relaunch` → `process:allow-restart`
-- **Sidecar**: logs detalhados de migration (caminhos, tamanho DB, output)
-- **Sidecar**: mensagem `EADDRINUSE` específica se porta 3001 ocupada
-- **Sidecar**: handlers globais `uncaughtException` + `unhandledRejection`
+**Correções implementadas (v0.1.22 → v0.1.25):**
 
-### v0.1.15 — Cancel durante setup + Timeout (correção de bugs do v0.1.14)
-- **`reset_cancel()` no início**: antes estava DEPOIS do setup (linha 338) — se usuário clicasse Stop durante `ensure_native_model` (>30s), a flag era limpa pelo `reset_cancel()` posterior, perdendo o stop
-- **`is_cancelled()` check no setup**: adicionado check depois de `ensure_native_model` e antes da API call, tanto em `chat_completion` quanto `cloud_chat_completion`
-- **Timeout reqwest**: todos os clients `reqwest::Client::new()` (sem timeout) substituídos por `.builder().timeout(60s)` no local, `120s` nos cloud — antes qualquer hang de rede travava o `invoke` para sempre, deixando "Aguardando resposta..." indefinidamente
-- `cloud_chat_completion` agora chama `reset_cancel()` no início também
+| O quê | Arquivo | Fix |
+|-------|---------|-----|
+| Provider LLM timeout | `llm-gateway.ts` | 120s → 30s em todos os 4 providers |
+| Frontend timeout | `useStream.ts` | 60s com `setTimeout` + `abortController.abort()`, distingue cancel (silencioso) de timeout (mensagem clara) |
+| `isRtkAvailable` timeout | `rtk.ts` | `execFileAsync` com timeout 3s (antes: infinito) |
+| `compressText` timeout | `rtk.ts` | `execFileAsync` com timeout 10s |
+| `buildContext` timeout | `chat.ts` | `Promise.race` com 15s — se passar, vira erro SSE |
+| `generateHwid` mapeamento | `crypto.ts` | win32→windows, x64→x86_64, fallback `''` |
+| HWID setado no startup | `index.ts` | `setHwid(generateHwid())` ANTES de `loadKeysFromDb()` |
+| `/hwid` recarrega gateway | `index.ts` | Safety net: re-lê chaves com HWID correto e recria gateway |
+| Download checa HTTP status | `updater.rs` | `response.ok` antes de salvar (não salva 404 HTML como .exe) |
+| Path dev só em debug | `updater.rs` | `cfg!(debug_assertions)` no path hardcoded |
+| Timeout update check | `updater.rs` | `.timeout(20s)` adicionado ao reqwest client (antes: só connect_timeout 5s) |
+| Log diagnóstico update | `updater.rs` | `aibuilder-updater.log` em `%TEMP%` |
 
 ## Builds gerados
 | Versão | Instaladores | Status |
@@ -98,7 +81,12 @@
 | v0.1.14 | NSIS + MSI | Buildado (bugs: stop e timeout) |
 | v0.1.15 | NSIS + MSI | Buildado |
 | v0.1.19 | NSIS + MSI | Buildado (Ollama removido, GitHub updater) |
-| v0.1.20 | — | **Atual** (sidecar logging + robustez) |
+| v0.1.20 | — | Buildado (sidecar logging + robustez) |
+| v0.1.21 | — | Buildado (gateway reference fix) |
+| v0.1.22 | — | Buildado (HWID mismatch + timeouts rtk/buildContext) |
+| v0.1.23 | — | Buildado (timeout providers + safety net /hwid) |
+| v0.1.24 | — | Publicado GitHub (bump para testar update from v0.1.23) |
+| v0.1.25 | NSIS | **Atual** (timeout reqwest 20s + log diagnóstico updater) |
 
 ## Estratégia de Update
 - **Resource bundled**: `updater.json` aponta para PRÓXIMA versão

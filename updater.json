@@ -1,11 +1,11 @@
 {
-  "version": "0.1.25",
-  "notes": "Fix update check: timeout completo 20s + log diagnóstico em %TEMP%\\aibuilder-updater.log.",
-  "pub_date": "2026-06-15T20:00:00Z",
+  "version": "0.1.26",
+  "notes": "Correção no diretório de dados do Sidecar (App Data) para o banco SQLite do Prisma. Inclusão de variável de ambiente DATABASE_URL. O chat agora grava e restaura chaves de API sem erro de permissão.",
+  "pub_date": "2026-06-15T15:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.25/AI.App.Builder.Studio_0.1.25_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.26/AI.App.Builder.Studio_0.1.26_x64-setup.exe"
     }
   }
 }

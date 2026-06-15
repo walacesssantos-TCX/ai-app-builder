@@ -143,7 +143,16 @@ pub fn start_sidecar() -> Result<(), String> {
         node_exe.display()
     ));
 
-    let db_url = format!("file:{}/prisma/aibuilder.db", sidecar_dir.to_string_lossy());
+    let db_dir = if let Ok(app_data) = std::env::var("APPDATA") {
+        let mut p = PathBuf::from(app_data);
+        p.push("Fluxcodex");
+        p.push("aibuilder");
+        let _ = std::fs::create_dir_all(&p);
+        p
+    } else {
+        std::env::temp_dir()
+    };
+    let db_url = format!("file:{}/aibuilder.db", db_dir.to_string_lossy());
 
     // Open log file for stderr capture
     let stderr_file = OpenOptions::new()
