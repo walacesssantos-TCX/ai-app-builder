@@ -17,11 +17,14 @@ export function setHwid(hwid: string): void {
 }
 
 export function generateHwid(): string {
-  const computer = process.env.COMPUTERNAME || 'unknown'
-  const os = platform()
-  const architecture = process.arch
-  const user = process.env.USERNAME || 'unknown'
-  const raw = `${computer}|${os}|${architecture}|${user}`
+  // Must match src-tauri/src/commands/filesystem.rs get_hwid() exactly
+  const hostname = process.env.COMPUTERNAME || process.env.HOSTNAME || ''
+  const osMap: Record<string, string> = { win32: 'windows', darwin: 'macos' }
+  const os = osMap[platform()] || platform()
+  const archMap: Record<string, string> = { x64: 'x86_64', x32: 'x86', arm64: 'aarch64' }
+  const arch = archMap[process.arch] || process.arch
+  const username = process.env.USERNAME || process.env.USER || ''
+  const raw = `${hostname}|${os}|${arch}|${username}`
   return createHash('sha256').update(raw).digest('hex')
 }
 

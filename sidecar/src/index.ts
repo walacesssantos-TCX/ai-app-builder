@@ -176,6 +176,19 @@ async function main() {
     const { hwid } = req.body as { hwid: string }
     if (hwid) {
       setHwid(hwid)
+      // Re-load keys with correct HWID (safety net for HWID mismatch)
+      const fresh = await loadKeysFromDb()
+      gateway = createGateway({
+        anthropic: process.env.ANTHROPIC_API_KEY || fresh.anthropic || '',
+        openai: process.env.OPENAI_API_KEY || fresh.openai || '',
+        openrouter: process.env.OPENROUTER_API_KEY || fresh.openrouter || '',
+        groq: process.env.GROQ_API_KEY || process.env.TOKEN_GROQ || fresh.groq || '',
+        gemini: process.env.GEMINI_API_KEY || fresh.gemini || '',
+        deepseek: process.env.DEEPSEEK_API_KEY || fresh.deepseek || '',
+        mistral: process.env.MISTRAL_API_KEY || fresh.mistral || '',
+        cohere: process.env.COHERE_API_KEY || fresh.cohere || '',
+      })
+      setCurrentGateway(gateway)
       return { success: true }
     }
     return { success: false, error: 'hwid required' }
