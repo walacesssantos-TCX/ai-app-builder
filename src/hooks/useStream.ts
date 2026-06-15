@@ -7,6 +7,7 @@ const SIDECAR_URL = 'http://127.0.0.1:3001'
 
 export function useStream() {
   const abortRef = useRef<AbortController | null>(null)
+  const cancelRef = useRef(false)
   const { setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents } = useChatStore()
 
   const sendMessage = useCallback(async (message: string, mode: string, conversationId: string, projectId: string) => {
@@ -36,6 +37,12 @@ export function useStream() {
 
     const abortController = new AbortController()
     abortRef.current = abortController
+    cancelRef.current = false
+
+    // Auto-timeout: abort after 60s so "Failed to fetch" vira mensagem amigável
+    const timeoutId = setTimeout(() => {
+      abortController.abort()
+    }, 60_000)
 
     let fullContent = ''
 
@@ -123,7 +130,18 @@ export function useStream() {
         clearStream()
       }
     } catch (err: unknown) {
-      if (err instanceof DOMException && err.name === 'AbortError') return
+      clearTimeout(timeoutId)
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        if (cancelRef.current) return
+        addMessage({
+          id: crypto.randomUUID(),
+          conversationId,
+          role: 'system',
+          content: 'Erro na conexão: A requisição excedeu o tempo limite de 60 segundos. Verifique se o servidor Groq está respondendo.',
+          createdAt: new Date().toISOString(),
+        })
+        return
+      }
       const errMsg = typeof err === 'string' ? err : (err instanceof Error ? err.message : JSON.stringify(err))
       addMessage({
         id: crypto.randomUUID(),
@@ -133,6 +151,7 @@ export function useStream() {
         createdAt: new Date().toISOString(),
       })
     } finally {
+      clearTimeout(timeoutId)
       setIsStreaming(false)
       setAgentRunning(false)
       abortRef.current = null
@@ -140,6 +159,7 @@ export function useStream() {
   }, [setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents])
 
   const cancel = useCallback(() => {
+    cancelRef.current = true
     if (abortRef.current) {
       abortRef.current.abort()
       abortRef.current = null

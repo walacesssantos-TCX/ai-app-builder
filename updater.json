@@ -1,11 +1,11 @@
 {
-  "version": "0.1.21",
-  "notes": "Fix: gateway agora sempre atual (getCurrentGateway), update flow split (download sem fechar app), v0.1.20 -> v0.1.21 release.",
-  "pub_date": "2026-06-15T18:00:00Z",
+  "version": "0.1.22",
+  "notes": "Fix: timeout 30s nos providers LLM (era 120s), timeout 60s no frontend, mensagens de erro mais claras quando a API demora.",
+  "pub_date": "2026-06-15T18:30:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.21/AI.App.Builder.Studio_0.1.21_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.22/AI.App.Builder.Studio_0.1.22_x64-setup.exe"
     }
   }
 }

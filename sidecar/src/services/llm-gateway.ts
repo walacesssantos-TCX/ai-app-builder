@@ -41,7 +41,7 @@ class AnthropicProvider implements LLMProvider {
         messages: req.messages,
         stream: true,
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(30_000),
     })
 
     if (!response.ok) {
@@ -123,7 +123,7 @@ class OpenAIProvider implements LLMProvider {
         stream: true,
         stream_options: { include_usage: true },
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(30_000),
     })
 
     if (!response.ok) {
@@ -282,7 +282,7 @@ class GeminiProvider implements LLMProvider {
           maxOutputTokens: req.maxTokens ?? 8192,
         },
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(30_000),
     })
 
     if (!response.ok) {
@@ -384,7 +384,7 @@ class CohereProvider implements LLMProvider {
         max_tokens: req.maxTokens ?? 8192,
         stream: true,
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(30_000),
     })
 
     if (!response.ok) {
