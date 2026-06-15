@@ -127,6 +127,23 @@ pub fn start_sidecar() -> Result<(), String> {
         }
     }
 
+    // Check if port 3001 is in use by a stale sidecar (e.g., from a previous app version)
+    let port_busy = std::net::TcpStream::connect_timeout(
+        &"127.0.0.1:3001".parse().unwrap(),
+        std::time::Duration::from_millis(200),
+    )
+    .is_ok();
+    if port_busy {
+        log_to_file("start_sidecar: port 3001 is in use — killing stale node processes");
+        let _ = Command::new("taskkill")
+            .args(["/f", "/im", "node.exe"])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn();
+        // Wait for port to be released
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+
     let sidecar_dir = get_sidecar_dir();
     let dist_path = sidecar_dir.join("dist/index.js");
     let src_path = sidecar_dir.join("src/index.ts");

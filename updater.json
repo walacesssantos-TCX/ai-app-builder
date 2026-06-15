@@ -1,11 +1,11 @@
 {
-  "version": "0.1.32",
-  "notes": "Upload de arquivos reformulado: suporte a WAV, MP3, MP4, PDF, DOCX, imagens e textos. Arquivos são lidos corretamente (FileReader base64) e enviados ao LLM como contexto.",
-  "pub_date": "2026-06-16T00:00:00Z",
+  "version": "0.1.33",
+  "notes": "Correção: sidecar não iniciava após atualização porque processo Node antigo mantinha a porta 3001 ocupada. Adicionada limpeza automática de processos stale antes de iniciar o sidecar.",
+  "pub_date": "2026-06-16T00:30:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.32/AI.App.Builder.Studio_0.1.32_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.33/AI.App.Builder.Studio_0.1.33_x64-setup.exe"
     }
   }
 }

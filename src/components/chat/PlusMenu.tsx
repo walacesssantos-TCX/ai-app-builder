@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Upload, Puzzle, FileText, X, FileIcon } from 'lucide-react'
+import { Plus, Upload, Puzzle, FileText, X } from 'lucide-react'
 import { useChatStore } from '@/stores/chat.store'
 import type { FileAttachment } from '@/types'
 
