@@ -130,7 +130,7 @@ export async function* runAgent(context: AgentContext): AsyncGenerator<AgentEven
     let response = ''
     for await (const chunk of gateway.stream({
       messages: fullMessages,
-      model: context.model || 'llama3-70b-8192',
+      model: context.model || 'llama-3.3-70b-versatile',
       stream: true,
       systemPrompt: ctx.systemPrompt,
     })) {

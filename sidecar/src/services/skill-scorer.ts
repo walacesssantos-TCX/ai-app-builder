@@ -42,7 +42,7 @@ ${remaining.map(s => `- ${s.name}: ${s.description}`).join('\n')}`
       const chunks: string[] = []
       for await (const chunk of gateway.stream({
         messages: [{ role: 'user', content: scoringPrompt }],
-        model: 'llama3-70b-8192',
+        model: 'llama-3.3-70b-versatile',
         stream: true,
         maxTokens: 1024,
       })) {

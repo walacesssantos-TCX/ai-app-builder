@@ -242,7 +242,7 @@ export class SubagentManager {
       let response = ''
       for await (const chunk of input.gateway.stream({
         messages: fullMessages,
-        model: def.model || input.model || 'llama3-70b-8192',
+        model: def.model || input.model || 'llama-3.3-70b-versatile',
         stream: true,
         systemPrompt: ctx.systemPrompt,
       })) {
