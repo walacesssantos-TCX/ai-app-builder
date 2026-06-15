@@ -1,11 +1,11 @@
 {
-  "version": "0.1.35",
-  "notes": "Player de áudio na conversa + auto-envio ao selecionar arquivo. Corrigido bodyLimit do Fastify (100MB) para aceitar uploads grandes como WAV.",
-  "pub_date": "2026-06-16T02:30:00Z",
+  "version": "0.1.36",
+  "notes": "Corrigido: erro 500 ao enviar arquivo sem texto — Zod exigia message com mínimo 1 caractere. Agora aceita mensagem vazia quando arquivo está presente.",
+  "pub_date": "2026-06-16T03:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.35/AI.App.Builder.Studio_0.1.35_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.36/AI.App.Builder.Studio_0.1.36_x64-setup.exe"
     }
   }
 }

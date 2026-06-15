@@ -32,7 +32,7 @@ const fileSchema = z.object({
 })
 
 const chatSchema = z.object({
-  message: z.string().min(1),
+  message: z.string().default(''),
   projectId: z.string().optional(),
   conversationId: z.string().optional(),
   mode: z.enum(['chat', 'agent', 'think']).default('chat'),
