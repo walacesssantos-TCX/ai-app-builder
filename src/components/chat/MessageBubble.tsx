@@ -34,6 +34,71 @@ export function MessageBubble({ message, compact }: MessageBubbleProps) {
   const isSystem = message.role === 'system'
   const hasAttachments = message.attachments && message.attachments.length > 0
 
+  function renderAttachment(file: import('@/types').FileAttachment) {
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+
+    if (AUDIO_EXTENSIONS.has(ext)) {
+      return (
+        <div key={file.name} className="space-y-1">
+          <div className={cn(
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-lg',
+            isUser ? 'bg-white/10' : 'bg-zinc-900/50 border border-zinc-800'
+          )}>
+            <span className="text-base">🎵</span>
+            <div className="flex-1 min-w-0">
+              <p className={cn('truncate', compact ? 'text-[11px]' : 'text-xs')}>{file.name}</p>
+              <p className={cn('opacity-60', compact ? 'text-[10px]' : 'text-[11px]')}>{formatSize(file.size)}</p>
+            </div>
+          </div>
+          <audio
+            controls
+            className="w-full h-9 rounded-lg"
+            src={`data:${file.mimeType};base64,${file.content}`}
+            preload="metadata"
+          >
+            Seu navegador não suporta áudio.
+          </audio>
+        </div>
+      )
+    }
+
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      return (
+        <div key={file.name} className="space-y-1">
+          <div className={cn(
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-lg',
+            isUser ? 'bg-white/10' : 'bg-zinc-900/50 border border-zinc-800'
+          )}>
+            <span className="text-base">🖼️</span>
+            <div className="flex-1 min-w-0">
+              <p className={cn('truncate', compact ? 'text-[11px]' : 'text-xs')}>{file.name}</p>
+              <p className={cn('opacity-60', compact ? 'text-[10px]' : 'text-[11px]')}>{formatSize(file.size)}</p>
+            </div>
+          </div>
+          <img
+            src={`data:${file.mimeType};base64,${file.content}`}
+            alt={file.name}
+            className="max-w-full rounded-lg"
+            loading="lazy"
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div key={file.name} className={cn(
+        'flex items-center gap-2 px-2.5 py-2 rounded-lg',
+        isUser ? 'bg-white/10' : 'bg-zinc-900/50 border border-zinc-800'
+      )}>
+        <span className="text-base">{getFileIcon(file.name, file.mimeType)}</span>
+        <div className="flex-1 min-w-0">
+          <p className={cn('truncate', compact ? 'text-[11px]' : 'text-xs')}>{file.name}</p>
+          <p className={cn('opacity-60', compact ? 'text-[10px]' : 'text-[11px]')}>{formatSize(file.size)}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(
@@ -54,25 +119,7 @@ export function MessageBubble({ message, compact }: MessageBubbleProps) {
       >
         {hasAttachments && (
           <div className={cn('space-y-1.5', message.content ? 'mb-2' : '')}>
-            {message.attachments!.map((file, i) => (
-              <div
-                key={`${file.name}-${i}`}
-                className={cn(
-                  'flex items-center gap-2 px-2.5 py-2 rounded-lg',
-                  isUser ? 'bg-white/10' : 'bg-zinc-900/50 border border-zinc-800'
-                )}
-              >
-                <span className="text-base">{getFileIcon(file.name, file.mimeType)}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={cn('truncate', compact ? 'text-[11px]' : 'text-xs')}>
-                    {file.name}
-                  </p>
-                  <p className={cn('opacity-60', compact ? 'text-[10px]' : 'text-[11px]')}>
-                    {formatSize(file.size)}
-                  </p>
-                </div>
-              </div>
-            ))}
+            {message.attachments!.map(renderAttachment)}
           </div>
         )}
         {isUser ? (

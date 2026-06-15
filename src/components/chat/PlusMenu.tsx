@@ -44,9 +44,10 @@ function readFileAsBase64(file: File): Promise<string> {
 interface PlusMenuProps {
   conversationId: string | null
   onNavigate?: (tab: string) => void
+  onFileSelect?: (file: FileAttachment) => void
 }
 
-export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
+export function PlusMenu({ conversationId, onNavigate, onFileSelect }: PlusMenuProps) {
   const [open, setOpen] = useState(false)
   const [contextOpen, setContextOpen] = useState(false)
   const [skillsOpen, setSkillsOpen] = useState(false)
@@ -54,7 +55,7 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ref = useRef<HTMLDivElement>(null)
   const contextRef = useRef<HTMLTextAreaElement>(null)
-  const { addPendingFile, pendingFiles, removePendingFile } = useChatStore()
+  const { pendingFiles, removePendingFile } = useChatStore()
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -83,7 +84,7 @@ export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
     if (!file) return
     try {
       const content = await readFileAsBase64(file)
-      addPendingFile({
+      onFileSelect?.({
         name: file.name,
         mimeType: file.type || 'application/octet-stream',
         size: file.size,

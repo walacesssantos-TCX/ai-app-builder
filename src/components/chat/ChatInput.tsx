@@ -62,6 +62,15 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
     }
   }
 
+  const sendFile = async (file: import('@/types').FileAttachment) => {
+    if (isStreaming) return
+    const convId = activeConversationId || crypto.randomUUID()
+    if (!activeConversationId) {
+      newConversation(convId, activeModel)
+    }
+    await sendMessage('', mode, convId, '', [file])
+  }
+
   return (
     <div className="border-t border-zinc-800 bg-zinc-950 p-4">
       <div className="flex items-center gap-2 mb-2">
@@ -71,6 +80,7 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
         <PlusMenu
           conversationId={activeConversationId}
           onNavigate={onNavigate}
+          onFileSelect={sendFile}
         />
         <textarea
           ref={textareaRef}

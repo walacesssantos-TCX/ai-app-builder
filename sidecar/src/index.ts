@@ -113,6 +113,7 @@ async function main() {
         options: { colorize: true },
       },
     },
+    bodyLimit: 100 * 1024 * 1024, // 100 MB — necessário para uploads de áudio/vídeo
   })
 
   await fastify.register(cors, {
