@@ -25,25 +25,29 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
   }, [input])
 
   const handleSend = async () => {
-    if (!input.trim() || isStreaming) return
+    try {
+      if (!input.trim() || isStreaming) return
 
-    const msg = input.trim()
+      const msg = input.trim()
 
-    // Handle /commands
-    if (msg === '/compact') {
-      toggleCompact()
+      // Handle /commands
+      if (msg === '/compact') {
+        toggleCompact()
+        setInput('')
+        return
+      }
+
+      const convId = activeConversationId || crypto.randomUUID()
+      if (!activeConversationId) {
+        newConversation(convId, activeModel)
+      }
+
       setInput('')
-      return
+
+      await sendMessage(msg, mode, convId, '')
+    } catch (err) {
+      console.error('[ChatInput] handleSend error:', err)
     }
-
-    const convId = activeConversationId || crypto.randomUUID()
-    if (!activeConversationId) {
-      newConversation(convId, activeModel)
-    }
-
-    setInput('')
-
-    await sendMessage(msg, mode, convId, '')
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

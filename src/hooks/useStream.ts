@@ -5,6 +5,14 @@ import { useSkillsStore } from '@/stores/skills.store'
 
 const SIDECAR_URL = 'http://127.0.0.1:3001'
 
+function genId(): string {
+  try {
+    return crypto.randomUUID()
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${performance.now().toString(36).slice(2, 6)}`
+  }
+}
+
 export function useStream() {
   const abortRef = useRef<AbortController | null>(null)
   const cancelRef = useRef(false)
@@ -14,39 +22,40 @@ export function useStream() {
     const activeModel = useSettingsStore.getState().activeModel
     const pinnedSkills = useSkillsStore.getState().pinned
     const allSkills = useSkillsStore.getState().available
-    const activeSkills = allSkills.filter(s => pinnedSkills.includes(s.name)).map(s => ({
-      name: s.name,
-      description: s.description,
-      content: s.content,
-      priority: s.priority,
-      tools: s.tools || [],
-    }))
 
-    setIsStreaming(true)
-    clearStream()
-    clearAgentEvents()
-    setAgentRunning(mode === 'agent')
-
-    addMessage({
-      id: crypto.randomUUID(),
-      conversationId,
-      role: 'user',
-      content: message,
-      createdAt: new Date().toISOString(),
-    })
-
+    let fullContent = ''
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
     const abortController = new AbortController()
     abortRef.current = abortController
     cancelRef.current = false
 
-    // Auto-timeout: abort after 60s so "Failed to fetch" vira mensagem amigável
-    const timeoutId = setTimeout(() => {
-      abortController.abort()
-    }, 60_000)
-
-    let fullContent = ''
-
     try {
+      const activeSkills = allSkills.filter(s => pinnedSkills.includes(s.name)).map(s => ({
+        name: s.name,
+        description: s.description,
+        content: s.content,
+        priority: s.priority,
+        tools: s.tools || [],
+      }))
+
+      setIsStreaming(true)
+      clearStream()
+      clearAgentEvents()
+      setAgentRunning(mode === 'agent')
+
+      addMessage({
+        id: genId(),
+        conversationId,
+        role: 'user',
+        content: message,
+        createdAt: new Date().toISOString(),
+      })
+
+      // Auto-timeout: abort after 60s so "Failed to fetch" vira mensagem amigável
+      timeoutId = setTimeout(() => {
+        abortController.abort()
+      }, 60_000)
+
       const response = await fetch(`${SIDECAR_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,6 +85,7 @@ export function useStream() {
       const decoder = new TextDecoder()
       let buffer = ''
 
+      readLoop:
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -89,7 +99,7 @@ export function useStream() {
           if (!trimmed || !trimmed.startsWith('data: ')) continue
 
           const data = trimmed.slice(6)
-          if (data === '[DONE]') break
+          if (data === '[DONE]') break readLoop
 
           try {
             const event = JSON.parse(data)
@@ -121,7 +131,7 @@ export function useStream() {
 
       if (fullContent) {
         addMessage({
-          id: crypto.randomUUID(),
+          id: genId(),
           conversationId,
           role: 'assistant',
           content: fullContent,
@@ -130,11 +140,11 @@ export function useStream() {
         clearStream()
       }
     } catch (err: unknown) {
-      clearTimeout(timeoutId)
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
       if (err instanceof DOMException && err.name === 'AbortError') {
         if (cancelRef.current) return
         addMessage({
-          id: crypto.randomUUID(),
+          id: genId(),
           conversationId,
           role: 'system',
           content: 'Erro na conexão: A requisição excedeu o tempo limite de 60 segundos. Verifique se o servidor Groq está respondendo.',
@@ -144,14 +154,14 @@ export function useStream() {
       }
       const errMsg = typeof err === 'string' ? err : (err instanceof Error ? err.message : JSON.stringify(err))
       addMessage({
-        id: crypto.randomUUID(),
+        id: genId(),
         conversationId,
         role: 'system',
         content: `Erro na conexão: ${errMsg}.`,
         createdAt: new Date().toISOString(),
       })
     } finally {
-      clearTimeout(timeoutId)
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
       setIsStreaming(false)
       setAgentRunning(false)
       abortRef.current = null

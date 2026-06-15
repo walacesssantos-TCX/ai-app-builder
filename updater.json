@@ -1,11 +1,11 @@
 {
-  "version": "0.1.26",
-  "notes": "Correção no diretório de dados do Sidecar (App Data) para o banco SQLite do Prisma. Inclusão de variável de ambiente DATABASE_URL. O chat agora grava e restaura chaves de API sem erro de permissão.",
-  "pub_date": "2026-06-15T15:00:00Z",
+  "version": "0.1.28",
+  "notes": "Correção crítica no chat: isStreaming não travava mais após erro de conexão, fallback UUID para ambientes sem crypto.randomUUID(), loop SSE [DONE] corrigido, handleSend com try-catch para evitar unhandled rejections.",
+  "pub_date": "2026-06-15T22:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.26/AI.App.Builder.Studio_0.1.26_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.28/AI.App.Builder.Studio_0.1.28_x64-setup.exe"
     }
   }
 }
