@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, Download, CheckCircle, AlertCircle, RotateCcw } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
-import { relaunch } from '@tauri-apps/plugin-process'
 
 type UpdateState =
   | { status: 'idle' }
@@ -62,7 +61,8 @@ export function UpdateSection() {
     setState({ status: 'installing' })
     try {
       await invoke('run_installer', { path: state.path })
-      await relaunch()
+      // Installer was spawned with /S /RUN — it will auto-close the app
+      // and launch the new version. No need to call relaunch().
     } catch (e) {
       setState({ status: 'error', message: `Falha ao instalar: ${e}` })
     }

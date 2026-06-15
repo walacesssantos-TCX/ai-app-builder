@@ -264,9 +264,9 @@ pub fn run_installer(path: String) -> Result<(), String> {
 
     std::thread::sleep(std::time::Duration::from_secs(3));
 
-    // Spawn installer detached — it will outlive the Tauri process
+    // Spawn installer detached with /RUN so it auto-launches after install
     std::process::Command::new(&path)
-        .args(["/S"])
+        .args(["/S", "/RUN"])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()
