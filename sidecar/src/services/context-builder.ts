@@ -260,10 +260,13 @@ export async function buildContext(input: BuildContextInput, basePrompt?: string
     }
   }
 
-  const messages = input.history.map(m => ({
-    role: m.role as 'user' | 'assistant',
-    content: m.content,
-  }))
+  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+    ...input.history.map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    })),
+    { role: 'user', content: input.message },
+  ]
 
   return {
     systemPrompt,
