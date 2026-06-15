@@ -46,20 +46,20 @@ export function MessageList() {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-1">
-      {compact && totalTokens > 0 && (
-        <div className="flex items-center justify-end gap-2 mb-2">
-          {rtkOn && (
-            <span className="flex items-center gap-1 text-[10px] text-emerald-600/60" title={`${rtkSaved} tokens economizados`}>
-              <Cpu className="w-3 h-3" /> RTK
-              {rtkSaved > 0 && <span className="text-gold-500/80">-{rtkSaved}</span>}
-            </span>
-          )}
+      <div className="flex items-center justify-end gap-2 mb-2">
+        {rtkOn && (
+          <span className="flex items-center gap-1 text-[10px] text-emerald-600/60" title={`${rtkSaved} tokens economizados`}>
+            <Cpu className="w-3 h-3" /> RTK
+            {rtkSaved > 0 && <span className="text-gold-500/80">-{rtkSaved.toLocaleString()}</span>}
+          </span>
+        )}
+        {totalTokens > 0 && (
           <span className="flex items-center gap-1 text-[10px] text-zinc-600">
             <Baseline className="w-3 h-3" />
             {totalTokens.toLocaleString()} tokens
           </span>
-        </div>
-      )}
+        )}
+      </div>
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} compact={compact} />
       ))}

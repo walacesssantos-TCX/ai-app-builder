@@ -1,11 +1,11 @@
 {
-  "version": "0.1.37",
-  "notes": "Histórico persistente: conversas salvas automaticamente no banco e listadas em Histórico com botão de exclusão. Arquivos processados (áudio) são salvos em C:\\Users\\walace\\Music\\Fluxcodex\\",
-  "pub_date": "2026-06-16T04:00:00Z",
+  "version": "0.1.38",
+  "notes": "RTK agora comprime também o histórico de mensagens (não só skills/arquivos). Badge RTK sempre visível no chat. Aba RTK nas Configurações com status e economia de tokens.",
+  "pub_date": "2026-06-16T05:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.37/AI.App.Builder.Studio_0.1.37_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.38/AI.App.Builder.Studio_0.1.38_x64-setup.exe"
     }
   }
 }

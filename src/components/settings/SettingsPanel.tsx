@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Key, Brain, Boxes, Puzzle, RefreshCw, Bot, Database, Github } from 'lucide-react'
+import { Key, Brain, Boxes, Puzzle, RefreshCw, Bot, Database, Github, Cpu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApiKeysSection } from './ApiKeysSection'
 import { ModelsSection } from './ModelsSection'
@@ -9,6 +9,7 @@ import { SubagentManagerSection } from './SubagentManagerSection'
 import { UpdateSection } from './UpdateSection'
 import { SupabaseSection } from './SupabaseSection'
 import { GitHubSection } from './GitHubSection'
+import { RtkSection } from './RtkSection'
 import { useSettingsStore } from '@/stores/settings.store'
 import { invoke } from '@tauri-apps/api/core'
 
@@ -20,6 +21,7 @@ const tabs = [
   { id: 'mcp', icon: Boxes, label: 'MCP Servers' },
   { id: 'github', icon: Github, label: 'GitHub' },
   { id: 'supabase', icon: Database, label: 'Supabase' },
+  { id: 'rtk', icon: Cpu, label: 'RTK' },
   { id: 'update', icon: RefreshCw, label: 'Atualizar' },
 ]
 
@@ -66,6 +68,7 @@ export function SettingsPanel() {
         {activeTab === 'mcp' && <McpServersSection />}
         {activeTab === 'github' && <GitHubSection />}
         {activeTab === 'supabase' && <SupabaseSection />}
+        {activeTab === 'rtk' && <RtkSection />}
         {activeTab === 'update' && <UpdateSection />}
       </div>
 

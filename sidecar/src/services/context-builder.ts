@@ -290,13 +290,19 @@ export async function buildContext(input: BuildContextInput, basePrompt?: string
 
   const userContent = fileContext ? `${input.message}\n\n---\n## Arquivos Anexados${fileContext}` : input.message
 
-  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
-    ...input.history.map(m => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    })),
-    { role: 'user', content: userContent },
-  ]
+  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = []
+  for (const m of input.history) {
+    let content = m.content
+    if (rtkAvailable && content.length > 300) {
+      const compressed = await compressText(content, 'minimal')
+      if (compressed.length < content.length) {
+        trackSaved(content, compressed)
+        content = compressed
+      }
+    }
+    messages.push({ role: m.role as 'user' | 'assistant', content })
+  }
+  messages.push({ role: 'user', content: userContent })
 
   return {
     systemPrompt,
