@@ -15,6 +15,43 @@ const createMessageSchema = z.object({
 })
 
 export function registerConversationRoutes(fastify: FastifyInstance): void {
+  // Global conversation endpoints (project-less, uses default Chat project)
+  fastify.get('/conversations', async () => {
+    const conversations = await prisma.conversation.findMany({
+      where: { projectId: 'chat-global' },
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { messages: true } } },
+    })
+    return conversations.map(c => ({
+      id: c.id,
+      title: c.title,
+      model: c.model,
+      mode: c.mode,
+      messageCount: c._count.messages,
+      createdAt: c.createdAt.toISOString(),
+    }))
+  })
+
+  fastify.post('/conversations', async (req, reply) => {
+    const parsed = createConversationSchema.parse(req.body)
+    const conversation = await prisma.conversation.create({
+      data: {
+        projectId: 'chat-global',
+        title: parsed.title,
+        model: parsed.model,
+        mode: parsed.mode,
+      },
+    })
+    reply.code(201)
+    return {
+      id: conversation.id,
+      title: conversation.title,
+      model: conversation.model,
+      mode: conversation.mode,
+      createdAt: conversation.createdAt.toISOString(),
+    }
+  })
+
   fastify.get('/projects/:projectId/conversations', async (req) => {
     const { projectId } = req.params as { projectId: string }
     const conversations = await prisma.conversation.findMany({

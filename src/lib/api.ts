@@ -34,7 +34,7 @@ export interface ProjectDto {
 
 export interface ConversationDto {
   id: string
-  projectId: string
+  projectId?: string
   title?: string
   model: string
   mode: string
@@ -174,6 +174,10 @@ export const api = {
       request<ConversationDto[]>('GET', `/projects/${projectId}/conversations`),
     create: (projectId: string, data: { title?: string; model?: string; mode?: string }) =>
       request<ConversationDto>('POST', `/projects/${projectId}/conversations`, data),
+    listAll: () =>
+      request<ConversationDto[]>('GET', '/conversations'),
+    createGlobal: (data: { title?: string; model?: string; mode?: string }) =>
+      request<ConversationDto>('POST', '/conversations', data),
     get: (id: string) => request<ConversationDto & { messages: MessageDto[] }>('GET', `/conversations/${id}`),
     delete: (id: string) => request<void>('DELETE', `/conversations/${id}`),
     messages: {

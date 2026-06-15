@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Terminal } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { ChatPanel } from '@/components/chat/ChatPanel'
+import { HistoryPanel } from '@/components/chat/HistoryPanel'
 import { RightPanel } from '@/components/layout/RightPanel'
 import { TerminalPanel } from '@/components/terminal/TerminalPanel'
 import { SkillsList } from '@/components/skills/SkillsList'
@@ -15,12 +16,15 @@ import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 import { TemplatesPanel } from '@/components/editor/TemplatesPanel'
 import { NetworkIndicator } from '@/components/layout/NetworkIndicator'
 import { useProjectStore } from '@/stores/project.store'
+import { useChatStore } from '@/stores/chat.store'
 import { cn } from '@/lib/utils'
 
 const SIDECAR_URL = 'http://127.0.0.1:3001'
 
 function MainContent({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) {
   switch (activeTab) {
+    case 'history':
+      return <HistoryPanel />
     case 'templates':
       return <TemplatesPanel />
     case 'compare':
@@ -53,9 +57,11 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [terminalOpen, setTerminalOpen] = useState(false)
   const { loadProjects } = useProjectStore()
+  const loadConversations = useChatStore((s) => s.loadConversations)
 
   useEffect(() => {
     loadProjects()
+    loadConversations()
 
     // Initialize HWID for crypto key derivation
     ;(async () => {
@@ -73,7 +79,7 @@ export default function App() {
     })()
   }, [loadProjects])
 
-  const isMainChat = activeTab === 'chat' || activeTab === 'history'
+  const isMainChat = activeTab === 'chat'
 
   return (
     <div className="h-screen w-screen flex bg-zinc-950 text-zinc-100 overflow-hidden">

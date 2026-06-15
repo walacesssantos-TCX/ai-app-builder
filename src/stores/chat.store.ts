@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Message, FileAttachment, Conversation, ChatMode, AgentEvent } from '@/types'
+import { api } from '@/lib/api'
 
 interface ChatStore {
   conversations: Conversation[]
@@ -31,9 +32,13 @@ interface ChatStore {
   addPendingFile: (file: FileAttachment) => void
   removePendingFile: (name: string) => void
   clearPendingFiles: () => void
+  loadConversations: () => Promise<void>
+  persistConversation: (id: string) => Promise<void>
+  persistMessage: (conversationId: string, message: Message) => Promise<void>
+  deleteConversation: (id: string) => Promise<void>
 }
 
-export const useChatStore = create<ChatStore>((set) => ({
+export const useChatStore = create<ChatStore>((set, get) => ({
   conversations: [],
   activeConversationId: null,
   messages: [],
@@ -84,7 +89,7 @@ export const useChatStore = create<ChatStore>((set) => ({
         createdAt: new Date().toISOString(),
       }
       return {
-        conversations: [...state.conversations, conv],
+        conversations: [conv, ...state.conversations],
         activeConversationId: id,
         messages: [],
         streamingContent: '',
@@ -106,4 +111,68 @@ export const useChatStore = create<ChatStore>((set) => ({
     set((state) => ({ pendingFiles: state.pendingFiles.filter(f => f.name !== name) })),
 
   clearPendingFiles: () => set({ pendingFiles: [] }),
+
+  loadConversations: async () => {
+    try {
+      const list = await api.conversations.listAll()
+      const convs: Conversation[] = list.map(c => ({
+        id: c.id,
+        projectId: '',
+        title: c.title || 'Nova conversa',
+        model: c.model,
+        mode: c.mode as ChatMode,
+        createdAt: c.createdAt,
+      }))
+      set({ conversations: convs })
+    } catch {
+      // sidecar offline — use local state only
+    }
+  },
+
+  persistConversation: async (id) => {
+    try {
+      const state = get()
+      const local = state.conversations.find(c => c.id === id)
+      if (!local) return
+      // Check if already persisted on backend
+      try {
+        await api.conversations.get(id)
+        return // already exists
+      } catch {
+        // 404 — create it
+      }
+      await api.conversations.createGlobal({
+        title: local.title,
+        model: local.model,
+        mode: local.mode,
+      })
+    } catch {
+      // silent
+    }
+  },
+
+  persistMessage: async (conversationId, message) => {
+    try {
+      await api.conversations.messages.create(conversationId, {
+        role: message.role,
+        content: message.content,
+        metadata: message.attachments ? JSON.stringify(message.attachments) : undefined,
+      })
+    } catch {
+      // silent
+    }
+  },
+
+  deleteConversation: async (id) => {
+    try {
+      await api.conversations.delete(id)
+    } catch {
+      // silent
+    }
+    set((state) => ({
+      conversations: state.conversations.filter(c => c.id !== id),
+      activeConversationId: state.activeConversationId === id ? null : state.activeConversationId,
+      messages: state.activeConversationId === id ? [] : state.messages,
+    }))
+  },
 }))

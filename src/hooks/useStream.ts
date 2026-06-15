@@ -5,6 +5,7 @@ import { useSkillsStore } from '@/stores/skills.store'
 import type { FileAttachment } from '@/types'
 
 const SIDECAR_URL = 'http://127.0.0.1:3001'
+const OUTPUT_DIR = 'C:\\Users\\walace\\Music\\Fluxcodex'
 
 function genId(): string {
   try {
@@ -14,12 +15,33 @@ function genId(): string {
   }
 }
 
+const AUDIO_EXTENSIONS = new Set(['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'wma'])
+
+function hasAudioFiles(files: FileAttachment[]): boolean {
+  return files.some(f => {
+    const ext = f.name.split('.').pop()?.toLowerCase() || ''
+    return AUDIO_EXTENSIONS.has(ext)
+  })
+}
+
+async function saveOutputFile(filename: string, content: string) {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core')
+    const baseName = filename.replace(/\.[^.]+$/, '')
+    const outPath = `${OUTPUT_DIR}\\${baseName}_transcription.txt`
+    await invoke('write_file', { path: outPath, content })
+    console.log(`[useStream] Saved transcription to ${outPath}`)
+  } catch {
+    // Tauri not available
+  }
+}
+
 export function useStream() {
   const abortRef = useRef<AbortController | null>(null)
   const cancelRef = useRef(false)
-  const { setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents } = useChatStore()
+  const { setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents, persistConversation, persistMessage } = useChatStore()
 
-  const sendMessage = useCallback(async (message: string, mode: string, conversationId: string, projectId: string, files: FileAttachment[] = []) => {
+  const sendMessage = useCallback(async (message: string, mode: string, conversationId: string, _projectId: string, files: FileAttachment[] = []) => {
     const activeModel = useSettingsStore.getState().activeModel
     const pinnedSkills = useSkillsStore.getState().pinned
     const allSkills = useSkillsStore.getState().available
@@ -44,14 +66,20 @@ export function useStream() {
       clearAgentEvents()
       setAgentRunning(mode === 'agent')
 
-      addMessage({
-        id: genId(),
+      // Persist conversation to backend
+      persistConversation(conversationId)
+
+      const userMsgId = genId()
+      const userMsg = {
+        id: userMsgId,
         conversationId,
-        role: 'user',
+        role: 'user' as const,
         content: message,
         attachments: files.length > 0 ? files : undefined,
         createdAt: new Date().toISOString(),
-      })
+      }
+      addMessage(userMsg)
+      persistMessage(conversationId, userMsg)
 
       // Auto-timeout: abort after 60s so "Failed to fetch" vira mensagem amigável
       timeoutId = setTimeout(() => {
@@ -69,7 +97,7 @@ export function useStream() {
           priority: s.priority,
         })),
         pinnedSkills,
-        projectId,
+        projectId: '',
       }
       if (files.length > 0) {
         body.files = files.map(f => ({ name: f.name, mimeType: f.mimeType, size: f.size, content: f.content }))
@@ -137,43 +165,54 @@ export function useStream() {
       }
 
       if (fullContent) {
-        addMessage({
+        const assistantMsg = {
           id: genId(),
           conversationId,
-          role: 'assistant',
+          role: 'assistant' as const,
           content: fullContent,
           createdAt: new Date().toISOString(),
-        })
+        }
+        addMessage(assistantMsg)
+        persistMessage(conversationId, assistantMsg)
         clearStream()
+
+        // Save processed file to Music/Fluxcodex when audio was attached
+        if (hasAudioFiles(files)) {
+          saveOutputFile(files[0].name, fullContent)
+        }
       }
     } catch (err: unknown) {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
       if (err instanceof DOMException && err.name === 'AbortError') {
         if (cancelRef.current) return
-        addMessage({
+        const sysMsg = {
           id: genId(),
           conversationId,
-          role: 'system',
+          role: 'system' as const,
           content: 'Erro na conexão: A requisição excedeu o tempo limite de 60 segundos. Verifique se o servidor Groq está respondendo.',
           createdAt: new Date().toISOString(),
-        })
+        }
+        addMessage(sysMsg)
+        persistMessage(conversationId, sysMsg)
         return
       }
       const errMsg = typeof err === 'string' ? err : (err instanceof Error ? err.message : JSON.stringify(err))
-      addMessage({
+      const sysMsg = {
         id: genId(),
         conversationId,
-        role: 'system',
+        role: 'system' as const,
         content: `Erro na conexão: ${errMsg}.`,
         createdAt: new Date().toISOString(),
-      })
+      }
+      addMessage(sysMsg)
+      persistMessage(conversationId, sysMsg)
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
       setIsStreaming(false)
       setAgentRunning(false)
       abortRef.current = null
     }
-  }, [setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents])
+  }, [setIsStreaming, addMessage, appendStreamChunk, clearStream, setAgentRunning, addTokens, addAgentEvent, clearAgentEvents, persistConversation, persistMessage])
 
   const cancel = useCallback(() => {
     cancelRef.current = true

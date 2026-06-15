@@ -105,6 +105,20 @@ async function main() {
   console.log(`[sidecar] Platform: ${process.platform} ${process.arch}`)
 
   runMigrations()
+
+  // Auto-create "Chat" project for global conversation storage
+  try {
+    const existing = await prisma.project.findFirst({ where: { id: 'chat-global' } })
+    if (!existing) {
+      await prisma.project.create({
+        data: { id: 'chat-global', name: 'Chat', path: '' },
+      })
+      console.log('[sidecar] ✓ Created default Chat project')
+    }
+  } catch (e) {
+    console.warn('[sidecar] Could not create Chat project:', (e as Error).message)
+  }
+
   const fastify = Fastify({
     logger: {
       level: 'info',
