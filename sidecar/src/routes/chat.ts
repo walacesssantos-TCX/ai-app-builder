@@ -314,7 +314,12 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-      reply.raw.write(`data: ${JSON.stringify({ type: 'message', content: `Erro: ${errorMessage}` })}\n\n`)
+      const isQuotaError = errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')
+      if (isQuotaError) {
+        reply.raw.write(`data: ${JSON.stringify({ type: 'message', content: `Cota do provedor exaurida (429). O modelo atual não pode processar mensagens no momento. Acesse Configurações > API Keys para configurar outro provedor (OpenAI, Anthropic, Groq) ou aguarde a cota resetar.` })}\n\n`)
+      } else {
+        reply.raw.write(`data: ${JSON.stringify({ type: 'message', content: `Erro: ${errorMessage}` })}\n\n`)
+      }
     }
 
     reply.raw.write('data: [DONE]\n\n')

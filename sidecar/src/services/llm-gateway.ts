@@ -196,6 +196,14 @@ export class LLMGateway {
     this.fallbackOrder = order
   }
 
+  private extractRetryDelay(errorMessage: string): number | null {
+    const match = errorMessage.match(/retry[_\s]?delay["']?:\s*"?(\d+(?:\.\d+)?)\s*s/i)
+    if (match) return parseFloat(match[1]) * 1000
+    const retryAfter = errorMessage.match(/retry after (\d+)/i)
+    if (retryAfter) return parseFloat(retryAfter[1]) * 1000
+    return null
+  }
+
   async *stream(req: LLMRequest): AsyncGenerator<string> {
     const provider = this.getProviderForModel(req.model)
     if (!provider) {
@@ -207,7 +215,19 @@ export class LLMGateway {
     try {
       yield* provider.streamChat(req)
     } catch (err) {
+      const errMsg = (err as Error).message
       errors.push(err as Error)
+
+      if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
+        const delay = this.extractRetryDelay(errMsg) ?? 15_000
+        await new Promise(resolve => setTimeout(resolve, Math.min(delay, 30_000)))
+        try {
+          yield* provider.streamChat(req)
+          return
+        } catch (retryErr) {
+          errors.push(retryErr as Error)
+        }
+      }
 
       for (const fallbackName of this.fallbackOrder) {
         const fallback = this.providers.get(fallbackName)

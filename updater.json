@@ -1,11 +1,11 @@
 {
-  "version": "0.1.29",
-  "notes": "Correção crítica: mensagens do usuário não chegavam ao LLM (buildContext ignorava input.message), resultando em resposta vazia no Gemini e perda de contexto nos demais provedores.",
-  "pub_date": "2026-06-15T22:30:00Z",
+  "version": "0.1.30",
+  "notes": "Melhorias de resiliência: retry automático em erro 429 (cota exaurida), mensagem de erro amigável sugerindo trocar de provedor nas configurações, correção crítica de mensagens perdidas (buildContext).",
+  "pub_date": "2026-06-15T23:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.29/AI.App.Builder.Studio_0.1.29_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.30/AI.App.Builder.Studio_0.1.30_x64-setup.exe"
     }
   }
 }
