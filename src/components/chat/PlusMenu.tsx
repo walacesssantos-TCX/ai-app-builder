@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Plus, Upload, Puzzle, FileText, X } from 'lucide-react'
 import { useChatStore } from '@/stores/chat.store'
 import { SkillsPopup } from './SkillsPopup'
-import type { FileAttachment } from '@/types'
 
 const TEXT_EXTENSIONS = new Set(['txt', 'json', 'js', 'ts', 'jsx', 'tsx', 'py', 'rs', 'go', 'java', 'cs', 'sql', 'html', 'css', 'md', 'csv', 'xml', 'yaml', 'yml', 'sh', 'ps1', 'bat', 'env', 'ini', 'cfg', 'log', 'toml', 'lock'])
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'])
@@ -44,10 +43,9 @@ function readFileAsBase64(file: File): Promise<string> {
 interface PlusMenuProps {
   conversationId: string | null
   onNavigate?: (tab: string) => void
-  onFileSelect?: (file: FileAttachment) => void
 }
 
-export function PlusMenu({ conversationId, onNavigate, onFileSelect }: PlusMenuProps) {
+export function PlusMenu({ conversationId, onNavigate }: PlusMenuProps) {
   const [open, setOpen] = useState(false)
   const [contextOpen, setContextOpen] = useState(false)
   const [skillsOpen, setSkillsOpen] = useState(false)
@@ -55,7 +53,7 @@ export function PlusMenu({ conversationId, onNavigate, onFileSelect }: PlusMenuP
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ref = useRef<HTMLDivElement>(null)
   const contextRef = useRef<HTMLTextAreaElement>(null)
-  const { pendingFiles, removePendingFile } = useChatStore()
+  const { pendingFiles, addPendingFile, removePendingFile } = useChatStore()
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -84,7 +82,7 @@ export function PlusMenu({ conversationId, onNavigate, onFileSelect }: PlusMenuP
     if (!file) return
     try {
       const content = await readFileAsBase64(file)
-      onFileSelect?.({
+      addPendingFile({
         name: file.name,
         mimeType: file.type || 'application/octet-stream',
         size: file.size,
