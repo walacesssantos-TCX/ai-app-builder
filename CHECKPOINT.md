@@ -1,18 +1,19 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.25** — última atualização: `2026-06-15T20:00:00Z`
+**v0.1.43** — última atualização: `2026-06-16T09:00:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
 - Sidecar Node.js (Fastify) em `sidecar/`, roda em `http://localhost:3001`
 - Vite dev server em `http://localhost:1420`
 - RTK (Rust Token Killer) ativo via hook global
-- Instaladores: MSI + NSIS em `src-tauri/target/release/bundle/`
+- Instaladores: NSIS em `src-tauri/target/release/bundle/`
 - Chave de assinatura em `~\.tauri\ai-updater.key`
 - Prisma + SQLite (`aibuilder.db`) no sidecar
-- Ollama removido (v0.1.19) — app 100% API-based (Groq, Anthropic, OpenAI, Gemini)
+- App 100% API-based (Groq, Anthropic, OpenAI, Gemini, DeepSeek, Mistral, Cohere, OpenRouter)
 - Sidecar com log para `%TEMP%\aibuilder-sidecar.log`
+- Updater com log para `%TEMP%\aibuilder-updater.log`
 
 ## O que foi implementado até v0.1.12
 
@@ -73,6 +74,115 @@
 | Timeout update check | `updater.rs` | `.timeout(20s)` adicionado ao reqwest client (antes: só connect_timeout 5s) |
 | Log diagnóstico update | `updater.rs` | `aibuilder-updater.log` em `%TEMP%` |
 
+### v0.1.26 → v0.1.27 — Correções de infraestrutura
+
+| O quê | Detalhes |
+|-------|----------|
+| Permissões SQLite | AppData permissions corrigidas para gravação do banco |
+| CORS sidecar | Correção de CORS entre Vite (1420) e sidecar (3001) |
+| Prisma DB URL | Ajuste de caminho absoluto no Windows |
+| isStreaming travado | Lock de estado para evitar loop infinito |
+| Fallback UUID | Geração de ID mesmo quando o sidecar não responde |
+| Loop SSE [DONE] | Prevenção de loop infinito no stream |
+
+### v0.1.28 → v0.1.29 — Modelos e resiliência
+
+| O quê | Detalhes |
+|-------|----------|
+| Groq model update | `llama3-70b-8192` descontinuado → `llama-3.3-70b-versatile` |
+| Retry 429 automático | Retry com backoff para rate limit, mensagem amigável de cota |
+
+### v0.1.30 → v0.1.35 — Upload de arquivos e mídia
+
+| O quê | Detalhes |
+|-------|----------|
+| Upload de arquivos | WAV, MP3, PDF, DOCX, imagens e textos com leitura base64 + envio ao LLM |
+| Audio player | Player embutido para áudios enviados |
+| Auto-send | Arquivo é enviado automaticamente ao selecionar |
+| bodyLimit 100MB | Fastify configurado para 100 MB |
+| Arquivos na conversa | Exibição de arquivos inline no histórico do chat |
+
+### v0.1.36 → v0.1.37 — Startup e UX
+
+| O quê | Detalhes |
+|-------|----------|
+| Sidecar kill stale | Mata `node.exe` preso na porta 3001 antes de iniciar |
+| Skills popup scroll | Popup de skills com scroll interno |
+
+### v0.1.38 → v0.1.39 — Histórico persistente
+
+| O quê | Detalhes |
+|-------|----------|
+| Histórico persistente | Conversas salvas no SQLite via Prisma |
+| Exclusão de conversas | Remoção individual de conversas |
+| Exportar transcrição | Salva transcrição em `Music/Fluxcodex/` |
+| Schema chat fix | Aceita mensagem vazia quando há arquivos |
+
+### v0.1.40 — RTK e Configurações
+
+| O quê | Detalhes |
+|-------|----------|
+| RTK comprime histórico | Compressão automática do histórico via RTK |
+| Badge sempre visível | Indicador de tokens economizados no cabeçalho |
+| Aba de configurações | Nova aba de configurações no painel lateral |
+
+### v0.1.41 — Terminal, Modelos e MCP Skills
+
+| O quê | Detalhes |
+|-------|----------|
+| Terminal skills-aware | Terminal integrado com contexto das skills ativas |
+| 30 modelos IA | Expansão para 8 providers com ~30 modelos |
+| MCP skills server | Servidor MCP para execução de skills como ferramentas |
+
+### v0.1.42 — OpenRouter e envio de arquivos
+
+| O quê | Detalhes |
+|-------|----------|
+| OpenRouter free | Rota `openrouter/free` para modelos gratuitos |
+| Arquivos + texto | Arquivos agora são enviados junto com o texto no mesmo request |
+
+### v0.1.43 — Histórico real e comando /compact
+
+| O quê | Detalhes |
+|-------|----------|
+| Histórico real no chat | Toda a conversa carregada do banco SQLite |
+| Comando /compact | Comando no chat para compactar mensagens manualmente via RTK |
+| RTK compression aprimorada | Compressão otimizada com fallback |
+
+## Rotas do Sidecar (16)
+```
+chat | api-keys | conversations | database | deploy
+github | kanban | mcp-servers | mcp-skills | memory
+preview | projects | skills | subagents | supabase | templates
+```
+
+## Serviços do Sidecar (13)
+```
+agent-engine | context-builder | deploy | dev-server-manager
+github | llm-gateway | mcp-client | mcp-manager | rtk
+skill-scorer | subagent-manager | supabase-manager | templates
+```
+
+## Providers de IA (8)
+Anthropic (Claude) | OpenAI (GPT) | Groq (Llama) | Gemini (Google)
+DeepSeek | Mistral | Cohere | OpenRouter
+
+## Comandos Rust (8 módulos)
+```
+filesystem | terminal | skills | git | sidecar | updater | runner | skills_data
+```
+
+## Frontend (7 seções)
+```
+chat/    → ChatPanel, ChatInput, HistoryPanel, useStream
+editor/  → McpExplorer, DeployView, TemplatesPanel, ComparePanel, MarketplacePanel
+kanban/  → KanbanBoard
+layout/  → Sidebar, RightPanel, NetworkIndicator
+settings/→ SettingsPanel (ApiKeys, Models, UpdateSection)
+skills/  → SkillsList, SkillCard
+terminal/→ TerminalPanel (skills-aware)
+```
+
 ## Builds gerados
 | Versão | Instaladores | Status |
 |--------|-------------|--------|
@@ -85,8 +195,15 @@
 | v0.1.21 | — | Buildado (gateway reference fix) |
 | v0.1.22 | — | Buildado (HWID mismatch + timeouts rtk/buildContext) |
 | v0.1.23 | — | Buildado (timeout providers + safety net /hwid) |
-| v0.1.24 | — | Publicado GitHub (bump para testar update from v0.1.23) |
-| v0.1.25 | NSIS | **Atual** (timeout reqwest 20s + log diagnóstico updater) |
+| v0.1.24 | — | Publicado GitHub (bump para testar update) |
+| v0.1.25 | NSIS | Buildado (timeout reqwest 20s + log diagnóstico updater) |
+| v0.1.27 | — | Buildado (isStreaming fix, CORS, Prisma path) |
+| v0.1.29 | — | Buildado (Groq model update, retry 429) |
+| v0.1.35 | — | Buildado (upload arquivos, audio, auto-send) |
+| v0.1.38 | — | Buildado (histórico persistente, exclusão, exportar) |
+| v0.1.39 | — | Buildado (RTK compression, badge, config) |
+| v0.1.41 | — | Buildado (terminal skills-aware, MCP skills, 30 modelos) |
+| v0.1.43 | NSIS | **Atual** (histórico real, /compact, arquivos+texto, OpenRouter free) |
 
 ## Estratégia de Update
 - **Resource bundled**: `updater.json` aponta para PRÓXIMA versão
