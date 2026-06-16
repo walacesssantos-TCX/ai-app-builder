@@ -248,8 +248,9 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
     let totalInput = 0
     let totalOutput = 0
 
-    // Carrega histórico da conversa do banco
+    // Carrega histórico da conversa do banco + arquivos anexados
     let history: Array<{ role: string; content: string }> = []
+    let historyFiles: Array<{ name: string; mimeType: string; size: number; content: string }> = []
     if (conversationId) {
       try {
         const msgs = await prisma.message.findMany({
@@ -258,19 +259,46 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
         })
         // slice(-1) para evitar duplicar a mensagem atual (já adicionada pelo persistMessage + buildContext)
         history = msgs.slice(0, -1).map(m => ({ role: m.role, content: m.content }))
+
+        // Extrai arquivos de mensagens anteriores para manter acesso no contexto
+        for (const msg of msgs.slice(0, -1)) {
+          if (msg.role === 'user' && msg.metadata) {
+            try {
+              const attachments = JSON.parse(msg.metadata)
+              if (Array.isArray(attachments)) {
+                for (const att of attachments) {
+                  if (att.name && att.content && !files?.some(f => f.name === att.name)) {
+                    historyFiles.push({
+                      name: att.name,
+                      mimeType: att.mimeType || 'application/octet-stream',
+                      size: att.size || att.content.length,
+                      content: att.content,
+                    })
+                  }
+                }
+              }
+            } catch { /* metadata malformado — ignora */ }
+          }
+        }
       } catch {
         // se falhar, segue com histórico vazio
       }
     }
 
     try {
+      // Merge arquivos atuais + arquivos do histórico
+      const allFiles = [
+        ...(files || []),
+        ...historyFiles,
+      ]
+
       ctx = await Promise.race([
         buildContext({
           message,
           history,
           activeSkills: activeSkills || [],
           projectPath: projectId,
-          files: files || [],
+          files: allFiles,
         }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('buildContext excedeu o limite de 15s')), 15_000)
