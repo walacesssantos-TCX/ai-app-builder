@@ -313,6 +313,18 @@ export const api = {
       request<{ filesCreated: number }>('POST', `/templates/${id}/create`, { destPath, replacements }),
   },
 
+  transcription: {
+    upload: (file: string, fileName: string) =>
+      request<{ jobId: string; fileName: string; status: string }>('POST', '/transcribe/upload', { file, fileName }),
+    start: (jobId: string) =>
+      request<{ jobId: string; status: string; message: string }>('POST', `/transcribe/start/${jobId}`),
+    status: (jobId: string) =>
+      request<{ jobId: string; status: string; originalFileName: string; createdAt: string; completedAt: string | null; errorMessage: string | null }>('GET', `/transcribe/status/${jobId}`),
+    result: (jobId: string) =>
+      request<{ jobId: string; text: string; originalFileName: string }>('GET', `/transcribe/result/${jobId}`),
+    downloadUrl: (jobId: string) => `http://127.0.0.1:3001/transcribe/download/${jobId}`,
+  },
+
   deploy: {
     list: () => request<DeploymentDto[]>('GET', '/deployments'),
     create: (data: { name: string; projectPath: string; platform?: string; branch?: string }) =>

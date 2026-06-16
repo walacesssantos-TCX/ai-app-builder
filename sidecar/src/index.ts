@@ -22,6 +22,7 @@ import { registerGitHubRoutes } from './routes/github.js'
 import { registerTemplateRoutes } from './routes/templates.js'
 import { registerDeployRoutes } from './routes/deploy.js'
 import { registerWhisperRoutes } from './routes/whisper.js'
+import { registerTranscribePageRoutes } from './routes/transcribe-page.js'
 import { isRtkAvailable, getSavedTokens } from './services/rtk.js'
 import { mcpManager } from './services/mcp-manager.js'
 import { subagentManager } from './services/subagent-manager.js'
@@ -183,6 +184,7 @@ async function main() {
   registerMemoryRoutes(fastify)
   registerDatabaseRoutes(fastify)
   registerWhisperRoutes(fastify)
+  registerTranscribePageRoutes(fastify)
 
   fastify.get('/rtk-status', async () => ({
     available: await isRtkAvailable(),

@@ -14,6 +14,7 @@ import { ComparePanel } from '@/components/editor/ComparePanel'
 import { MarketplacePanel } from '@/components/editor/MarketplacePanel'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 import { TemplatesPanel } from '@/components/editor/TemplatesPanel'
+import { TranscriptionPanel } from '@/components/transcription/TranscriptionPanel'
 import { NetworkIndicator } from '@/components/layout/NetworkIndicator'
 import { useProjectStore } from '@/stores/project.store'
 import { useChatStore } from '@/stores/chat.store'
@@ -29,6 +30,8 @@ function MainContent({ activeTab, onTabChange }: { activeTab: string; onTabChang
       return <TemplatesPanel />
     case 'compare':
       return <ComparePanel />
+    case 'transcription':
+      return <TranscriptionPanel />
     case 'marketplace':
       return <MarketplacePanel />
     case 'skills':

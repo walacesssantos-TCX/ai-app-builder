@@ -16,12 +16,14 @@ import {
   SplitSquareHorizontal,
   ShoppingCart,
   Zap,
+  AudioWaveform,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProjectStore } from '@/stores/project.store'
 
 const navItems = [
   { id: 'chat', icon: MessageSquare, label: 'Chat' },
+  { id: 'transcription', icon: AudioWaveform, label: 'Transcrição' },
   { id: 'projects', icon: FolderOpen, label: 'Projetos' },
   { id: 'history', icon: History, label: 'Histórico' },
   { id: 'templates', icon: Layers, label: 'Templates' },
