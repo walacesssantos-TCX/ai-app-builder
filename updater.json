@@ -1,11 +1,11 @@
 {
-  "version": "0.1.38",
-  "notes": "RTK agora comprime também o histórico de mensagens (não só skills/arquivos). Badge RTK sempre visível no chat. Aba RTK nas Configurações com status e economia de tokens.",
-  "pub_date": "2026-06-16T05:00:00Z",
+  "version": "0.1.40",
+  "notes": "Terminal persistente com cmd.exe + skills-aware. MCP endpoint para skills. 30 novos modelos de IA (10 free + 12 OpenRouter gratuitos). Provedores: Anthropic, OpenAI, Groq, Gemini, DeepSeek, Mistral, Cohere, OpenRouter.",
+  "pub_date": "2026-06-16T06:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.38/AI.App.Builder.Studio_0.1.38_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.40/AI.App.Builder.Studio_0.1.40_x64-setup.exe"
     }
   }
 }
