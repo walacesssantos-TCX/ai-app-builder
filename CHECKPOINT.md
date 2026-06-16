@@ -203,7 +203,8 @@ terminal/→ TerminalPanel (skills-aware)
 | v0.1.38 | — | Buildado (histórico persistente, exclusão, exportar) |
 | v0.1.39 | — | Buildado (RTK compression, badge, config) |
 | v0.1.41 | — | Buildado (terminal skills-aware, MCP skills, 30 modelos) |
-| v0.1.43 | NSIS | **Atual** (histórico real, /compact, arquivos+texto, OpenRouter free) |
+| v0.1.43 | NSIS | Buildado (histórico real, /compact, arquivos+texto, OpenRouter free)
+| v0.1.44 | NSIS + MSI | **Atual** (CHECKPOINT sincronizado, version sync) |
 
 ## Estratégia de Update
 - **Resource bundled**: `updater.json` aponta para PRÓXIMA versão
