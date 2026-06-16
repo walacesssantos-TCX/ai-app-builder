@@ -1,11 +1,11 @@
 {
-  "version": "0.1.42",
-  "notes": "Fix: arquivos e texto enviados juntos no chat agora são combinados em uma única mensagem para a IA. Antes o arquivo era enviado separadamente (mensagem vazia) e o histórico não era passado, fazendo a IA perder o contexto do arquivo.",
-  "pub_date": "2026-06-16T08:00:00Z",
+  "version": "0.1.43",
+  "notes": "IA agora lembra de toda a conversa: histórico completo carregado do banco e comprimido via RTK. Comando /compact no chat para compactar mensagens manualmente. Arquivos e texto enviados juntos.",
+  "pub_date": "2026-06-16T09:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.42/AI.App.Builder.Studio_0.1.42_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.43/AI.App.Builder.Studio_0.1.43_x64-setup.exe"
     }
   }
 }

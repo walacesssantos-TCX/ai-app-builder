@@ -8,6 +8,7 @@ import { runAgent } from '../services/agent-engine.js'
 import { scoreSkills } from '../services/skill-scorer.js'
 import * as github from '../services/github.js'
 import type { AgentTool, ToolDef } from '../services/agent-engine.js'
+import { prisma } from '../lib/prisma.js'
 
 const toolDefSchema = z.object({
   name: z.string(),
@@ -234,7 +235,7 @@ Formate sua resposta com:
 export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown): void {
   fastify.post('/chat', async (req, reply) => {
     const parsed = chatSchema.parse(req.body)
-    let { message, mode, activeSkills, projectId, availableSkills, pinnedSkills, files } = parsed
+    let { message, mode, activeSkills, projectId, availableSkills, pinnedSkills, files, conversationId } = parsed
 
     reply.raw.setHeader('Content-Type', 'text/event-stream')
     reply.raw.setHeader('Cache-Control', 'no-cache')
@@ -247,11 +248,26 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
     let totalInput = 0
     let totalOutput = 0
 
+    // Carrega histórico da conversa do banco
+    let history: Array<{ role: string; content: string }> = []
+    if (conversationId) {
+      try {
+        const msgs = await prisma.message.findMany({
+          where: { conversationId },
+          orderBy: { createdAt: 'asc' },
+        })
+        // slice(-1) para evitar duplicar a mensagem atual (já adicionada pelo persistMessage + buildContext)
+        history = msgs.slice(0, -1).map(m => ({ role: m.role, content: m.content }))
+      } catch {
+        // se falhar, segue com histórico vazio
+      }
+    }
+
     try {
       ctx = await Promise.race([
         buildContext({
           message,
-          history: [],
+          history,
           activeSkills: activeSkills || [],
           projectPath: projectId,
           files: files || [],
@@ -290,7 +306,7 @@ export function registerChatRoutes(fastify: FastifyInstance, _gateway?: unknown)
           customTools: customTools.length > 0 ? customTools : undefined,
           input: {
             message,
-            history: [],
+            history,
             activeSkills: activeSkills || [],
             files: files || [],
           },

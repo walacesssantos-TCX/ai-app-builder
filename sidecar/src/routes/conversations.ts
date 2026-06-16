@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
+import { isRtkAvailable, compressText, trackSaved } from '../services/rtk.js'
 
 const createConversationSchema = z.object({
   title: z.string().optional(),
@@ -166,5 +167,35 @@ export function registerConversationRoutes(fastify: FastifyInstance): void {
       metadata: message.metadata,
       createdAt: message.createdAt.toISOString(),
     }
+  })
+
+  fastify.post('/conversations/:id/compress', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const rtkAvailable = await isRtkAvailable()
+    if (!rtkAvailable) {
+      return reply.status(400).send({ error: 'RTK não disponível' })
+    }
+
+    const messages = await prisma.message.findMany({
+      where: { conversationId: id },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    let totalSaved = 0
+    for (const msg of messages) {
+      if (msg.content.length > 300) {
+        const compressed = await compressText(msg.content, 'aggressive')
+        if (compressed.length < msg.content.length) {
+          trackSaved(msg.content, compressed)
+          totalSaved += msg.content.length - compressed.length
+          await prisma.message.update({
+            where: { id: msg.id },
+            data: { content: compressed },
+          })
+        }
+      }
+    }
+
+    return { compressed: messages.length, charsSaved: totalSaved }
   })
 }

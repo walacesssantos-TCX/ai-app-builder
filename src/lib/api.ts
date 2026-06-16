@@ -185,6 +185,8 @@ export const api = {
         request<MessageDto[]>('GET', `/conversations/${conversationId}/messages`),
       create: (conversationId: string, data: { role: string; content: string; metadata?: string }) =>
         request<MessageDto>('POST', `/conversations/${conversationId}/messages`, data),
+      compress: (conversationId: string) =>
+        request<{ compressed: number; charsSaved: number }>('POST', `/conversations/${conversationId}/compress`),
     },
   },
 

@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/stores/settings.store'
 import { useStream } from '@/hooks/useStream'
 import { PlusMenu } from './PlusMenu'
 import { ModeSelector } from './ModeSelector'
+import { api } from '@/lib/api'
 
 interface ChatInputProps {
   onNavigate?: (tab: string) => void
@@ -13,7 +14,7 @@ interface ChatInputProps {
 export function ChatInput({ onNavigate }: ChatInputProps) {
   const [input, setInput] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { isStreaming, activeConversationId, mode, compact, newConversation, toggleCompact } = useChatStore()
+  const { isStreaming, activeConversationId, mode, compact, newConversation } = useChatStore()
   const activeModel = useSettingsStore((state) => state.activeModel)
   const { sendMessage, cancel } = useStream()
 
@@ -35,8 +36,26 @@ export function ChatInput({ onNavigate }: ChatInputProps) {
 
       // Handle /commands
       if (msg === '/compact') {
-        toggleCompact()
         setInput('')
+        if (!activeConversationId) return
+        try {
+          const result = await api.conversations.messages.compress(activeConversationId)
+          useChatStore.getState().addMessage({
+            id: crypto.randomUUID(),
+            conversationId: activeConversationId,
+            role: 'system',
+            content: `🧹 Conversa compactada: ${result.compressed} mensagens comprimidas, ${(result.charsSaved / 1024).toFixed(1)} KB economizados.`,
+            createdAt: new Date().toISOString(),
+          })
+        } catch {
+          useChatStore.getState().addMessage({
+            id: crypto.randomUUID(),
+            conversationId: activeConversationId,
+            role: 'system',
+            content: '⚠️ RTK não disponível para compactar a conversa.',
+            createdAt: new Date().toISOString(),
+          })
+        }
         return
       }
 

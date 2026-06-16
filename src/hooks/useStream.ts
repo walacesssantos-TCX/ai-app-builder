@@ -98,6 +98,7 @@ export function useStream() {
         })),
         pinnedSkills,
         projectId: '',
+        conversationId,
       }
       if (files.length > 0) {
         body.files = files.map(f => ({ name: f.name, mimeType: f.mimeType, size: f.size, content: f.content }))
