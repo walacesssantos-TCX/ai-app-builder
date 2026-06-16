@@ -100,6 +100,12 @@ export interface FileEntry {
   children?: FileEntry[]
 }
 
+export interface FluxcodexPaths {
+  project_root: string
+  skills_dir: string
+  app_dir: string
+}
+
 export interface TerminalSession {
   id: string
   title: string
@@ -108,7 +114,7 @@ export interface TerminalSession {
 
 export interface TerminalEvent {
   output: string
-  stream: 'stdout' | 'stderr' | 'status'
+  stream: 'stdout' | 'stderr' | 'status' | 'exit'
 }
 
 export interface LLMProvider {

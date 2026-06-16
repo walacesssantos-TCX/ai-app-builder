@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import type { FileEntry, SkillMeta, TerminalEvent } from '@/types'
+import type { FileEntry, FluxcodexPaths, SkillMeta, TerminalEvent } from '@/types'
 
 export async function readFile(path: string): Promise<string> {
   return invoke('read_file', { path })
@@ -26,12 +26,24 @@ export async function searchFiles(path: string, query: string): Promise<Array<{ 
   return invoke('search_files', { path, query })
 }
 
-export async function runCommand(command: string, workingDir: string, sessionId: string): Promise<void> {
-  return invoke('run_command', { command, workingDir, sessionId })
+export async function getFluxcodexPaths(): Promise<FluxcodexPaths> {
+  return invoke('get_fluxcodex_paths')
 }
 
-export async function killProcess(sessionId: string): Promise<void> {
-  return invoke('kill_process', { sessionId })
+export async function createTerminal(sessionId: string, cwd: string): Promise<void> {
+  return invoke('create_terminal', { sessionId, cwd })
+}
+
+export async function writeTerminal(sessionId: string, input: string): Promise<void> {
+  return invoke('write_terminal', { sessionId, input })
+}
+
+export async function killTerminal(sessionId: string): Promise<void> {
+  return invoke('kill_terminal', { sessionId })
+}
+
+export async function resizeTerminal(sessionId: string, cols: number, rows: number): Promise<void> {
+  return invoke('resize_terminal', { sessionId, cols, rows })
 }
 
 export async function discoverSkills(projectPath: string): Promise<SkillMeta[]> {
@@ -58,8 +70,8 @@ export async function openFolderDialog(): Promise<string | null> {
   return invoke('open_folder_dialog')
 }
 
-export function onTerminalOutput(sessionId: string, callback: (event: TerminalEvent) => void) {
-  return listen<TerminalEvent>(`terminal:${sessionId}`, (e) => callback(e.payload))
+export function onTerminalOutput(sessionId: string, callback: (event: TerminalEvent) => void): Promise<() => void> {
+  return listen<TerminalEvent>(`terminal:${sessionId}`, (e) => callback(e.payload)).then(fn => fn)
 }
 
 if (typeof invoke === 'undefined' || typeof listen === 'undefined') {

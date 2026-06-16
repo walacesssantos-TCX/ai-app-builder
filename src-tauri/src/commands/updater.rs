@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::{self, Write};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
@@ -173,7 +174,6 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
 fn log_updater(msg: &str) {
     let log_path = std::env::temp_dir().join("aibuilder-updater.log");
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_path) {
-        use std::io::Write;
         let _ = writeln!(f, "{}", msg);
     }
 }
@@ -239,10 +239,12 @@ pub fn install_update(path: String) -> Result<String, String> {
     let installer_path = if path.starts_with("http://") || path.starts_with("https://") {
         let client = reqwest::blocking::Client::builder()
             .user_agent("ai-app-builder-updater")
+            .no_gzip()
+            .timeout(std::time::Duration::from_secs(300))
             .build()
             .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
 
-        let resp = client
+        let mut resp = client
             .get(&path)
             .send()
             .map_err(|e| format!("Falha ao baixar atualização: {}", e))?;
@@ -260,8 +262,11 @@ pub fn install_update(path: String) -> Result<String, String> {
         let filename = path.rsplit('/').next().unwrap_or("installer.exe");
         let dest = temp_dir.join(filename);
 
-        let bytes = resp.bytes().map_err(|e| format!("Falha ao ler resposta: {}", e))?;
-        fs::write(&dest, &bytes).map_err(|e| format!("Falha ao salvar instalador: {}", e))?;
+        // Stream the response to disk instead of loading into memory
+        let mut dest_file = std::fs::File::create(&dest)
+            .map_err(|e| format!("Falha ao criar arquivo temporário: {}", e))?;
+        io::copy(&mut resp, &mut dest_file)
+            .map_err(|e| format!("Falha ao baixar: {}", e))?;
 
         dest.to_string_lossy().to_string()
     } else {

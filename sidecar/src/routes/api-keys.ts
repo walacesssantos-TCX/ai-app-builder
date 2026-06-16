@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { encryptKey } from '../lib/crypto.js'
 
-const PROVIDERS = ['anthropic', 'openai', 'openrouter', 'groq', 'gemini', 'deepseek', 'mistral'] as const
+const PROVIDERS = ['anthropic', 'openai', 'openrouter', 'groq', 'gemini', 'deepseek', 'mistral', 'cohere'] as const
 
 const createSchema = z.object({
   provider: z.enum(PROVIDERS),

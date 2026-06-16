@@ -92,7 +92,12 @@ class AnthropicProvider implements LLMProvider {
   }
 
   models(): string[] {
-    return ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-opus-4-20250514']
+    return [
+      'claude-sonnet-4-20250514',
+      'claude-3-5-sonnet-20241022',
+      'claude-3-5-haiku-20241022',
+      'claude-opus-4-20250514',
+    ]
   }
 }
 
@@ -104,6 +109,8 @@ class OpenAIProvider implements LLMProvider {
   constructor(apiKey: string, baseUrl = 'https://api.openai.com/v1') {
     this.apiKey = apiKey
     this.baseUrl = baseUrl
+    if (baseUrl.includes('openrouter')) this.name = 'openrouter'
+    if (baseUrl.includes('groq')) this.name = 'groq'
   }
 
   async *streamChat(req: LLMRequest): AsyncGenerator<string> {
@@ -174,10 +181,29 @@ class OpenAIProvider implements LLMProvider {
     if (this.baseUrl.includes('groq')) {
       return [
         'llama-3.3-70b-versatile',
+        'llama-3.3-70b-specdec',
+        'llama-3.2-3b-preview',
+        'llama-3.2-1b-preview',
         'llama-3.1-8b-instant',
         'mixtral-8x7b-32768',
         'gemma2-9b-it',
         'gemma-7b-it',
+      ]
+    }
+    if (this.baseUrl.includes('openrouter')) {
+      return [
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'meta-llama/llama-3.1-8b-instruct:free',
+        'google/gemma-2-2b-it:free',
+        'google/gemma-2-9b-it:free',
+        'microsoft/phi-3-mini-128k-instruct:free',
+        'microsoft/phi-3-medium-128k-instruct:free',
+        'qwen/qwen-2.5-7b-instruct:free',
+        'qwen/qwen-2.5-72b-instruct:free',
+        'mistralai/mistral-7b-instruct-v0.3:free',
+        'cohere/command-r7b-12-2024:free',
+        'nousresearch/hermes-3-llama-3.1-405b:free',
+        'sophosympatheia/rogue-rosie-34b:free',
       ]
     }
     return ['gpt-4o', 'gpt-4o-mini', 'o1', 'o3-mini']
@@ -258,6 +284,7 @@ export class LLMGateway {
     }
     if (model.startsWith('gemini-')) return this.providers.get('gemini')
     if (model.startsWith('deepseek-')) return this.providers.get('deepseek')
+    if (model.includes('/')) return this.providers.get('openrouter')
     if (model.includes('mistral') || model.includes('codestral')) return this.providers.get('mistral')
     if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma')) {
       return this.providers.get('groq')
@@ -350,7 +377,14 @@ class GeminiProvider implements LLMProvider {
   }
 
   models(): string[] {
-    return ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro-exp-03-25']
+    return [
+      'gemini-2.5-flash-preview-04-17',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-2.5-pro-exp-03-25',
+    ]
   }
 }
 
@@ -363,7 +397,7 @@ class DeepSeekProvider extends OpenAIProvider {
   }
 
   models(): string[] {
-    return ['deepseek-chat', 'deepseek-reasoner']
+    return ['deepseek-chat', 'deepseek-chat-v3-0324', 'deepseek-reasoner']
   }
 }
 
@@ -376,7 +410,7 @@ class MistralProvider extends OpenAIProvider {
   }
 
   models(): string[] {
-    return ['mistral-large-latest', 'codestral-latest', 'mistral-small-latest']
+    return ['mistral-large-latest', 'codestral-latest', 'mistral-small-latest', 'ministral-3b-latest', 'open-mistral-nemo']
   }
 }
 
@@ -496,7 +530,7 @@ export function createGateway(apiKeys: Record<string, string>): LLMGateway {
     gateway.registerProvider(new CohereProvider(apiKeys.cohere))
   }
 
-  gateway.setFallbackOrder(['anthropic', 'gemini', 'openai', 'deepseek', 'mistral', 'cohere', 'groq'])
+  gateway.setFallbackOrder(['anthropic', 'gemini', 'openai', 'openrouter', 'deepseek', 'mistral', 'cohere', 'groq'])
 
   return gateway
 }

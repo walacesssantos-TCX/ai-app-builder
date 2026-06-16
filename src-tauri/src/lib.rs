@@ -1,6 +1,7 @@
 mod commands;
 mod skills_data;
 
+use commands::terminal::TerminalState;
 use commands::{filesystem, runner, terminal, skills, git, sidecar, updater};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -9,6 +10,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .manage(TerminalState::new())
         .invoke_handler(tauri::generate_handler![
             filesystem::read_file,
             filesystem::write_file,
@@ -16,7 +18,11 @@ pub fn run() {
             filesystem::list_dir,
             filesystem::get_file_tree,
             filesystem::get_hwid,
-            terminal::run_command,
+            terminal::create_terminal,
+            terminal::write_terminal,
+            terminal::kill_terminal,
+            terminal::resize_terminal,
+            terminal::get_fluxcodex_paths,
             skills::discover_skills,
             skills::read_skill,
             git::git_status,

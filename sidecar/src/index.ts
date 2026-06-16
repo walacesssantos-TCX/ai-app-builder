@@ -12,6 +12,7 @@ import { registerConversationRoutes } from './routes/conversations.js'
 import { registerMcpRoutes } from './routes/mcp-servers.js'
 import { registerSubagentRoutes } from './routes/subagents.js'
 import { registerSkillRoutes } from './routes/skills.js'
+import { registerMcpSkillsRoutes } from './routes/mcp-skills.js'
 import { registerMemoryRoutes } from './routes/memory.js'
 import { registerDatabaseRoutes } from './routes/database.js'
 import { registerPreviewRoutes } from './routes/preview.js'
@@ -177,6 +178,7 @@ async function main() {
   registerTemplateRoutes(fastify)
   registerDeployRoutes(fastify)
   registerSkillRoutes(fastify)
+  registerMcpSkillsRoutes(fastify)
   registerMemoryRoutes(fastify)
   registerDatabaseRoutes(fastify)
 

@@ -39,6 +39,9 @@ export function ModelsSection({ activeModel, onModelChange }: ModelsSectionProps
             } else if (model.startsWith('command-')) {
               if (!grouped['Cohere']) grouped['Cohere'] = []
               grouped['Cohere'].push(model)
+            } else if (model.includes('/')) {
+              if (!grouped['OpenRouter']) grouped['OpenRouter'] = []
+              grouped['OpenRouter'].push(model)
             } else {
               if (!grouped['Outros']) grouped['Outros'] = []
               grouped['Outros'].push(model)
