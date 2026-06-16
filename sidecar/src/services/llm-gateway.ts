@@ -192,18 +192,9 @@ class OpenAIProvider implements LLMProvider {
     }
     if (this.baseUrl.includes('openrouter')) {
       return [
+        'openrouter/free',
         'meta-llama/llama-3.2-3b-instruct:free',
-        'meta-llama/llama-3.1-8b-instruct:free',
-        'google/gemma-2-2b-it:free',
-        'google/gemma-2-9b-it:free',
-        'microsoft/phi-3-mini-128k-instruct:free',
-        'microsoft/phi-3-medium-128k-instruct:free',
-        'qwen/qwen-2.5-7b-instruct:free',
-        'qwen/qwen-2.5-72b-instruct:free',
-        'mistralai/mistral-7b-instruct-v0.3:free',
-        'cohere/command-r7b-12-2024:free',
         'nousresearch/hermes-3-llama-3.1-405b:free',
-        'sophosympatheia/rogue-rosie-34b:free',
       ]
     }
     return ['gpt-4o', 'gpt-4o-mini', 'o1', 'o3-mini']

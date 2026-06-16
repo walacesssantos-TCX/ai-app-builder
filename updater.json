@@ -1,11 +1,11 @@
 {
-  "version": "0.1.40",
-  "notes": "Terminal persistente com cmd.exe + skills-aware. MCP endpoint para skills. 30 novos modelos de IA (10 free + 12 OpenRouter gratuitos). Provedores: Anthropic, OpenAI, Groq, Gemini, DeepSeek, Mistral, Cohere, OpenRouter.",
-  "pub_date": "2026-06-16T06:00:00Z",
+  "version": "0.1.41",
+  "notes": "Fix: modelos OpenRouter :free descontinuados substituídos pelo router openrouter/free que seleciona automaticamente modelos gratuitos disponíveis.",
+  "pub_date": "2026-06-16T07:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.40/AI.App.Builder.Studio_0.1.40_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.41/AI.App.Builder.Studio_0.1.41_x64-setup.exe"
     }
   }
 }
