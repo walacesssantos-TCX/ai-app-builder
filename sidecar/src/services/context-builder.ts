@@ -1,6 +1,7 @@
 import { readdir, stat, readFile as fsReadFile } from 'fs/promises'
 import { join, relative } from 'path'
 import { isRtkAvailable, compressText, trackSaved } from './rtk.js'
+import { transcribeBuffer, isWhisperAvailable } from './whisper.js'
 
 interface ToolDef {
   name: string
@@ -269,11 +270,18 @@ export async function buildContext(input: BuildContextInput, basePrompt?: string
   }
 
   let fileContext = ''
+  const whisperAvail = input.files?.some(f => {
+    const ext = f.name.split('.').pop()?.toLowerCase() || ''
+    return ['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'opus', 'webm'].includes(ext) || f.mimeType.startsWith('audio/')
+  }) ? await isWhisperAvailable() : false
+
   if (input.files && input.files.length > 0) {
     for (const file of input.files) {
       const ext = file.name.split('.').pop()?.toLowerCase() || ''
       const textExts = new Set(['txt', 'json', 'js', 'ts', 'jsx', 'tsx', 'py', 'rs', 'go', 'java', 'cs', 'sql', 'html', 'css', 'md', 'csv', 'xml', 'yaml', 'yml', 'sh', 'ps1', 'bat', 'env', 'ini', 'cfg', 'log', 'toml'])
       const isText = textExts.has(ext) || file.mimeType.startsWith('text/')
+      const audioExts = new Set(['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'opus', 'webm'])
+      const isAudio = audioExts.has(ext) || file.mimeType.startsWith('audio/')
 
       if (isText) {
         try {
@@ -282,6 +290,16 @@ export async function buildContext(input: BuildContextInput, basePrompt?: string
         } catch {
           fileContext += `\n\n### 📄 ${file.name}\n*[Não foi possível decodificar o conteúdo]*`
         }
+      } else if (isAudio && whisperAvail) {
+        try {
+          const buffer = Buffer.from(file.content, 'base64')
+          const result = await transcribeBuffer(buffer, file.name, { model: 'tiny' })
+          fileContext += `\n\n### 🎤 ${file.name} (transcrito via Whisper)\n- **Modelo:** ${result.model}\n- **Idioma:** ${result.language}\n- **Duração da transcrição:** ${result.duration}s\n- **Segmentos:** ${result.segments}\n\n**Transcrição:**\n\`\`\`\n${result.text.slice(0, 15000)}\n\`\`\``
+        } catch (err) {
+          fileContext += `\n\n### 🎤 ${file.name}\n- **Tipo:** ${file.mimeType}\n- **Tamanho:** ${(file.size / 1024).toFixed(1)} KB\n- *Whisper não conseguiu transcrever este áudio: ${err instanceof Error ? err.message : 'erro desconhecido'}*`
+        }
+      } else if (isAudio && !whisperAvail) {
+        fileContext += `\n\n### 🎤 ${file.name}\n- **Tipo:** ${file.mimeType}\n- **Tamanho:** ${(file.size / 1024).toFixed(1)} KB\n- *Áudio detectado mas Whisper não está disponível localmente. Use a skill audio-transcriber para ativar.*`
       } else {
         fileContext += `\n\n### ${file.name}\n- **Tipo:** ${file.mimeType}\n- **Tamanho:** ${(file.size / 1024).toFixed(1)} KB\n- *Este tipo de arquivo não pôde ser convertido para texto automaticamente. O assistente pode ajudar a processá-lo com ferramentas externas.*`
       }

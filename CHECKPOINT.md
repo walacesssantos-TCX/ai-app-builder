@@ -1,7 +1,7 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.44** — última atualização: `2026-06-16T10:00:00Z`
+**v0.1.45** — última atualização: `2026-06-16T11:00:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
@@ -204,7 +204,20 @@ terminal/→ TerminalPanel (skills-aware)
 | v0.1.39 | — | Buildado (RTK compression, badge, config) |
 | v0.1.41 | — | Buildado (terminal skills-aware, MCP skills, 30 modelos) |
 | v0.1.43 | NSIS | Buildado (histórico real, /compact, arquivos+texto, OpenRouter free)
-| v0.1.44 | NSIS + MSI | **Atual** (CHECKPOINT sincronizado, version sync) |
+| v0.1.44 | NSIS + MSI | Buildado (CHECKPOINT sincronizado, version sync)
+| v0.1.45 | NSIS + MSI | **Atual** (Whisper integrado, transcrição automática de áudio) |
+
+### v0.1.45 — Whisper integrado + transcrição automática de áudio
+
+| O quê | Detalhes |
+|-------|----------|
+| Serviço Whisper | `whisper.ts` — chama o Whisper Python local via subprocesso, salva áudio em temp, executa transcrição, retorna texto |
+| Rota `/whisper/transcribe` | Endpoint POST que aceita base64 + fileName, devolve transcrição com metadados |
+| Rota `/whisper/status` | Endpoint GET que verifica disponibilidade do Whisper |
+| Transcrição automática | `context-builder.ts` detecta arquivos de áudio (WAV, MP3, FLAC, OGG, M4A, AAC) e transcreve via Whisper antes de enviar ao LLM |
+| Skill audio-transcriber | Reescreita com frontmatter YAML + tools `transcribe_audio` e `whisper_status`, documentação da API interna |
+| Whisper local | `C:\Users\walace\AppData\Local\Python\pythoncore-3.14-64\Scripts\whisper.exe` — CPU only, modelo auto-download |
+| Variáveis de ambiente | `WHISPER_PYTHON` (caminho do Python), `WHISPER_MODEL` (padrão: `medium`) |
 
 ## Estratégia de Update
 - **Resource bundled**: `updater.json` aponta para PRÓXIMA versão
