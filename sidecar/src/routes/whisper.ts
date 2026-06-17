@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { transcribeBase64, isWhisperAvailable } from '../services/whisper.js'
+import { isFfmpegAvailable, getFfmpegPath } from '../services/ffmpeg.js'
 
 export function registerWhisperRoutes(fastify: FastifyInstance) {
   fastify.post('/whisper/transcribe', async (req, reply) => {
@@ -29,6 +30,8 @@ export function registerWhisperRoutes(fastify: FastifyInstance) {
 
   fastify.get('/whisper/status', async () => ({
     available: await isWhisperAvailable(),
+    ffmpeg: isFfmpegAvailable(),
+    ffmpegPath: getFfmpegPath(),
     python: process.env.WHISPER_PYTHON || 'default',
   }))
 }

@@ -3,6 +3,7 @@ import { writeFile, unlink, readFile, mkdtemp, readdir } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join, extname } from 'path'
 import { randomUUID } from 'crypto'
+import { ensureFfmpegInPath, isFfmpegAvailable, getFfmpegPath } from './ffmpeg.js'
 
 
 const PYTHON = process.env.WHISPER_PYTHON || 'C:\\Users\\walace\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe'
@@ -27,7 +28,11 @@ export async function isWhisperAvailable(): Promise<boolean> {
   if (_whisperAvailable !== null) return _whisperAvailable
   try {
     execSync(`"${PYTHON}" -c "import whisper; print(whisper.__version__)"`, { timeout: 5000, stdio: 'pipe' })
-    _whisperAvailable = true
+    const ff = isFfmpegAvailable()
+    _whisperAvailable = ff
+    if (!ff) {
+      process.stderr.write('[whisper] Python whisper disponível, mas ffmpeg não encontrado\n')
+    }
   } catch {
     _whisperAvailable = false
   }
@@ -40,12 +45,23 @@ export async function transcribeBuffer(
   options?: TranscribeOptions
 ): Promise<TranscribeResult> {
   const model = options?.model || process.env.WHISPER_MODEL || 'medium'
+
+  const ffmpegOk = isFfmpegAvailable()
+  if (!ffmpegOk) {
+    throw new Error(
+      'ffmpeg não encontrado. O instalador já inclui ffmpeg, mas ele não foi localizado. ' +
+      'Tente reinstalar o aplicativo ou instale manualmente: winget install ffmpeg'
+    )
+  }
+
   const tmpDir = await mkdtemp(join(tmpdir(), 'whisper-'))
   const audioPath = join(tmpDir, fileName)
   const startTime = Date.now()
 
   try {
     await writeFile(audioPath, audioBuffer)
+
+    ensureFfmpegInPath()
 
     const args = ['-m', 'whisper', audioPath, '--model', model, '--output_dir', tmpDir, '--output_format', 'txt']
 
@@ -75,10 +91,7 @@ export async function transcribeBuffer(
     })
 
     if (stderrLog.toLowerCase().includes('filenotfounderror') || stderrLog.includes('WinError 2')) {
-      if (stderrLog.includes('load_audio') || stderrLog.includes('ffmpeg')) {
-        throw new Error('ffmpeg não encontrado. Instale ffmpeg (winget install ffmpeg) e tente novamente.')
-      }
-      throw new Error(`Whisper encontrou um erro interno:\n${stderrLog.slice(0, 500)}`)
+      throw new Error(`Whisper encontrou um erro interno de sistema:\n${stderrLog.slice(0, 500)}`)
     }
 
     const files = await readdir(tmpDir)
