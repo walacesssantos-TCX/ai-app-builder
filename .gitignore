@@ -8,6 +8,7 @@ src-tauri/target/
 *.exe
 *.msi
 *.nupkg
+*.sig
 
 # Database
 *.db
