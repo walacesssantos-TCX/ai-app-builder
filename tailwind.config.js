@@ -7,19 +7,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Override zinc to match our dark luxury theme
+        // Dynamic zinc palette (from CSS variables, changes with theme)
         zinc: {
-          50: '#FAF8F5',
-          100: '#F0EDE6',
-          200: '#D9D2C4',
-          300: '#BFB5A0',
-          400: '#A6987C',
-          500: '#8C7C5E',
-          600: '#6F6248',
-          700: '#524734',
-          800: '#352E20',
-          900: '#1C1810',
-          950: '#080705',
+          50: 'var(--zinc-50)',
+          100: 'var(--zinc-100)',
+          200: 'var(--zinc-200)',
+          300: 'var(--zinc-300)',
+          400: 'var(--zinc-400)',
+          500: 'var(--zinc-500)',
+          600: 'var(--zinc-600)',
+          700: 'var(--zinc-700)',
+          800: 'var(--zinc-800)',
+          900: 'var(--zinc-900)',
+          950: 'var(--zinc-950)',
         },
         // Dynamic brand color (from CSS variable)
         'brand': {
