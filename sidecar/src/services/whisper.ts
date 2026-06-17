@@ -3,7 +3,7 @@ import { writeFile, unlink, readFile, mkdtemp, readdir } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join, extname } from 'path'
 import { randomUUID } from 'crypto'
-import { ensureFfmpegInPath, isFfmpegAvailable, getFfmpegPath } from './ffmpeg.js'
+import { ensureFfmpegInPath, isFfmpegAvailable, getFfmpegPath, getAudioDurationSeconds } from './ffmpeg.js'
 
 
 const PYTHON = process.env.WHISPER_PYTHON || 'C:\\Users\\walace\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe'
@@ -70,6 +70,15 @@ export async function transcribeBuffer(
 
     ensureFfmpegInPath()
 
+    const modelFactors: Record<string, number> = { tiny: 1, base: 2, small: 4, medium: 8, large: 16, turbo: 1.5 }
+    const factor = modelFactors[model] ?? 4
+    const audioDuration = getAudioDurationSeconds(audioPath)
+    const dynamicTimeout = audioDuration
+      ? Math.min(Math.max(Math.round(audioDuration * factor * 6 * 1000), 300_000), 7_200_000)
+      : 1_800_000
+
+    process.stderr.write(`[whisper] model=${model} duration=${audioDuration ?? '?'}s timeout=${(dynamicTimeout / 1000).toFixed(0)}s\n`)
+
     const args = ['-m', 'whisper', audioPath, '--model', model, '--output_dir', tmpDir, '--output_format', 'txt']
 
     if (options?.language) {
@@ -78,7 +87,7 @@ export async function transcribeBuffer(
 
     let stderrLog = ''
     await new Promise<void>((resolve, reject) => {
-      const proc = execFile(PYTHON, args, { timeout: 600_000, maxBuffer: 100 * 1024 * 1024, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }, (err) => {
+      const proc = execFile(PYTHON, args, { timeout: dynamicTimeout, maxBuffer: 100 * 1024 * 1024, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }, (err) => {
         if (err) {
           const nodeErr = err as NodeJS.ErrnoException & { code?: string | number; signal?: string; killed?: boolean }
           const msg = err instanceof Error ? err.message.toLowerCase() : ''
@@ -89,7 +98,9 @@ export async function transcribeBuffer(
           const exitCode = nodeErr.code ?? 'unknown'
           const signal = nodeErr.signal ?? 'none'
           const killed = nodeErr.killed ?? false
-          const timeoutHint = killed && signal === 'SIGTERM' ? ' (possível timeout — áudio longo demais para o modelo)' : ''
+          const timeoutHint = killed && signal === 'SIGTERM'
+            ? ` (timeout de ${(dynamicTimeout / 1000 / 60).toFixed(0)}min excedido — áudio muito longo ou PC lento demais para o modelo "${model}")`
+            : ''
           reject(new Error(
             `Whisper falhou (exit: ${exitCode}, signal: ${signal}, killed: ${killed})${timeoutHint}. ` +
             `Log:\n${stderrLog.slice(0, 1000)}`

@@ -1,7 +1,7 @@
 {
   "name": "ai-app-builder",
   "private": true,
-  "version": "0.1.52",
+  "version": "0.1.53",
   "description": "AI App Builder Studio - Desktop app for building software via natural language",
   "type": "module",
   "scripts": {

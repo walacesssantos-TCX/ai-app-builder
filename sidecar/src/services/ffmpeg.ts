@@ -62,3 +62,27 @@ export function ensureFfmpegInPath(): void {
     process.env.PATH = `${dir};${currentPath}`
   }
 }
+
+function resolveFfprobePath(): string | null {
+  const ffmpeg = resolveFfmpegPath()
+  if (!ffmpeg) return null
+  const dir = ffmpeg.substring(0, ffmpeg.lastIndexOf('\\'))
+  const probe = `${dir}\\ffprobe.exe`
+  if (existsSync(probe)) return probe
+  return null
+}
+
+export function getAudioDurationSeconds(audioPath: string): number | null {
+  const probe = resolveFfprobePath()
+  if (!probe) return null
+  try {
+    const out = execSync(
+      `"${probe}" -v error -show_entries format=duration -of csv=p=0 "${audioPath}"`,
+      { timeout: 10_000, stdio: 'pipe', encoding: 'utf-8' }
+    ).toString().trim()
+    const secs = parseFloat(out)
+    return isFinite(secs) && secs > 0 ? secs : null
+  } catch {
+    return null
+  }
+}
