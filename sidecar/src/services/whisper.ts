@@ -34,7 +34,7 @@ function pickModel(bufferSize: number): 'tiny' | 'base' | 'small' {
 export async function isWhisperAvailable(): Promise<boolean> {
   if (_whisperAvailable !== null) return _whisperAvailable
   try {
-    execSync(`"${PYTHON}" -c "import whisper; print(whisper.__version__)"`, { timeout: 5000, stdio: 'pipe' })
+    execSync(`"${PYTHON}" -c "import whisper; print(whisper.__version__)"`, { timeout: 5000, stdio: 'pipe', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } })
     const ff = isFfmpegAvailable()
     _whisperAvailable = ff
     if (!ff) {
@@ -78,7 +78,7 @@ export async function transcribeBuffer(
 
     let stderrLog = ''
     await new Promise<void>((resolve, reject) => {
-      const proc = execFile(PYTHON, args, { timeout: 600_000, maxBuffer: 100 * 1024 * 1024 }, (err) => {
+      const proc = execFile(PYTHON, args, { timeout: 600_000, maxBuffer: 100 * 1024 * 1024, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }, (err) => {
         if (err) {
           const nodeErr = err as NodeJS.ErrnoException & { code?: string | number; signal?: string; killed?: boolean }
           const msg = err instanceof Error ? err.message.toLowerCase() : ''
