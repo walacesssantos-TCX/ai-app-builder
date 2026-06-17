@@ -1,8 +1,9 @@
 import { execFile, execSync } from 'child_process'
-import { writeFile, unlink, readFile, mkdtemp } from 'fs/promises'
+import { writeFile, unlink, readFile, mkdtemp, readdir } from 'fs/promises'
 import { tmpdir } from 'os'
-import { join } from 'path'
+import { join, extname } from 'path'
 import { randomUUID } from 'crypto'
+
 
 const PYTHON = process.env.WHISPER_PYTHON || 'C:\\Users\\walace\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe'
 
@@ -52,23 +53,53 @@ export async function transcribeBuffer(
       args.push('--language', options.language)
     }
 
+    let stderrLog = ''
     await new Promise<void>((resolve, reject) => {
       const proc = execFile(PYTHON, args, { timeout: 600_000, maxBuffer: 100 * 1024 * 1024 }, (err) => {
-        if (err) reject(err)
-        else resolve()
+        if (err) {
+          const msg = err instanceof Error ? err.message.toLowerCase() : ''
+          if (msg.includes('enoent') || msg.includes('not found') || (err as { code?: string }).code === 'ENOENT') {
+            reject(new Error('Python não encontrado. Verifique WHISPER_PYTHON.'))
+          } else {
+            reject(new Error(`Whisper falhou: ${err.message}. Log:\n${stderrLog.slice(0, 1000)}`))
+          }
+        } else {
+          resolve()
+        }
       })
       proc.stderr?.on('data', (chunk: Buffer) => {
-        process.stderr.write(`[whisper] ${chunk.toString().trim()}\n`)
+        const line = chunk.toString()
+        stderrLog += line
+        process.stderr.write(`[whisper] ${line.trim()}\n`)
       })
     })
 
-    const txtPath = audioPath.replace(/\.[^.]+$/, '.txt')
+    if (stderrLog.toLowerCase().includes('filenotfounderror') || stderrLog.includes('WinError 2')) {
+      if (stderrLog.includes('load_audio') || stderrLog.includes('ffmpeg')) {
+        throw new Error('ffmpeg não encontrado. Instale ffmpeg (winget install ffmpeg) e tente novamente.')
+      }
+      throw new Error(`Whisper encontrou um erro interno:\n${stderrLog.slice(0, 500)}`)
+    }
+
+    const files = await readdir(tmpDir)
+    const outFile = files.find(f => f !== fileName && !f.startsWith('part_'))
     let text = ''
-    try {
-      text = await readFile(txtPath, 'utf-8')
-    } catch {
-      const modelTxtPath = join(tmpDir, `${fileName.replace(/\.[^.]+$/, '')}.txt`)
-      text = await readFile(modelTxtPath, 'utf-8')
+    if (outFile) {
+      text = await readFile(join(tmpDir, outFile), 'utf-8')
+    } else {
+      const txtPath = audioPath.replace(/\.[^.]+$/, '.txt')
+      try {
+        text = await readFile(txtPath, 'utf-8')
+      } catch {
+        const modelTxtPath = join(tmpDir, `${fileName.replace(/\.[^.]+$/, '')}.txt`)
+        try {
+          text = await readFile(modelTxtPath, 'utf-8')
+        } catch {
+          throw new Error(
+            `Whisper não gerou arquivo de saída. Log do Whisper:\n${stderrLog.slice(0, 1000)}`
+          )
+        }
+      }
     }
 
     const duration = (Date.now() - startTime) / 1000
@@ -82,9 +113,12 @@ export async function transcribeBuffer(
       language: options?.language || 'auto',
     }
   } finally {
-    for (const f of [audioPath, audioPath.replace(/\.[^.]+$/, '.txt'), audioPath.replace(/\.[^.]+$/, '.vtt'), audioPath.replace(/\.[^.]+$/, '.srt'), audioPath.replace(/\.[^.]+$/, '.tsv'), audioPath.replace(/\.[^.]+$/, '.json')]) {
-      unlink(f).catch(() => {})
-    }
+    try {
+      const files = await readdir(tmpDir)
+      for (const f of files) {
+        unlink(join(tmpDir, f)).catch(() => {})
+      }
+    } catch {}
     unlink(tmpDir).catch(() => {})
   }
 }
