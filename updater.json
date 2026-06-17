@@ -1,11 +1,11 @@
 {
-  "version": "0.1.47",
-  "notes": "Nova página de transcrição de áudio com arrastar e soltar, progresso em tempo real e download em .docx.",
-  "pub_date": "2026-06-17T12:00:00Z",
+  "version": "0.1.48",
+  "notes": "Correção do crash na transcrição de áudio (ffmpeg ausente), sistema de temas, exportação de documentos do chat, e correções gerais.",
+  "pub_date": "2026-06-17T14:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUZXNNL3JUclprejUwRXJwdHpRR2lWL3Y1U3FKSHEzSmt2eWlFWXhOTkZEc3FBUFpkTm9ZVm44SjYxYXZZdG5RNlk0MjliY2RWUThtd0xSUVV3MWlFNnFIWWlyclloRlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzA3MTM3CWZpbGU6aW5zdGFsbGVyLmV4ZQorUzVTeGxQNEJyQjdMS1hvZGdnS3JpSzlXbkZ0R0s3VTE0WUhjRzU3bkVNR0dleHExQmpJSU9uL3JjTU1XK2ZPZEN4UkplZVVQZVYyQWtPVU56Zm5DQT09Cg==",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.47/AI.App.Builder.Studio_0.1.47_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUZXNNL3JUclprejRZNlN0a1N2VGZkZjYrcXRYUXVNbUVmMzZKMWNTclp6bU42MlkwbjU2UnFnUzhzeTJGdlNVUXd4alkwR2pyeUpVL01vb0hSVGFyRHVWYllLRmZrWVFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzA3NzAwCWZpbGU6aW5zdGFsbGVyLmV4ZQphZU1FdjliOFYzcWRtYU40aW12aE51SWNLVlhTT2Y3RkFQcEJGOGNRSTBDV0IzNWt5TG9Cc3FyR3RlY2ptOElqU01XK2hOaDB3dnErZ1pMM2hrcUNEdz09Cg==",
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.48/AI.App.Builder.Studio_0.1.48_x64-setup.exe"
     }
   }
 }
