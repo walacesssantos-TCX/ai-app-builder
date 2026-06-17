@@ -66,7 +66,7 @@ dependencies = [
 
 [[package]]
 name = "ai-app-builder"
-version = "0.1.52"
+version = "0.1.53"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",

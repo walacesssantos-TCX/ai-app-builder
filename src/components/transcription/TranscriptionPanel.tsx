@@ -5,7 +5,14 @@ import { api } from '@/lib/api'
 
 type PageState = 'idle' | 'file_selected' | 'uploading' | 'transcribing' | 'done' | 'error'
 
-const MODELS = ['tiny', 'base', 'small', 'medium'] as const
+const MODELS = ['tiny', 'base', 'small', 'medium', 'large'] as const
+
+const MODES = [
+  { value: 'auto', label: 'Auto', description: 'turbo para modelos leves, balanced para grandes' },
+  { value: 'turbo', label: 'Turbo', description: 'mais rápido, menor consumo de GPU' },
+  { value: 'balanced', label: 'Balanceado', description: 'meio-termo entre velocidade e precisão' },
+  { value: 'precision', label: 'Precisão', description: 'máxima acurácia (beam_size=5, best_of=5)' },
+] as const
 
 const ALLOWED_EXTS = ['.mp3', '.wav', '.m4a', '.ogg', '.flac']
 const MAX_FILE_SIZE = 75 * 1024 * 1024
@@ -34,6 +41,8 @@ export function TranscriptionPanel() {
   const [file, setFile] = useState<File | null>(null)
   const [model, setModel] = useState<string>('auto')
   const [modelOpen, setModelOpen] = useState(false)
+  const [mode, setMode] = useState<string>('auto')
+  const [modeOpen, setModeOpen] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [resultText, setResultText] = useState<string>('')
   const [errorMsg, setErrorMsg] = useState<string>('')
@@ -116,6 +125,7 @@ export function TranscriptionPanel() {
 
       const payload: Record<string, string> = {}
       if (model !== 'auto') payload.model = model
+      if (mode !== 'auto') payload.mode = mode
       await api.transcription.start(uploadRes.jobId, payload)
       startPolling(uploadRes.jobId)
     } catch (err) {
@@ -167,7 +177,7 @@ export function TranscriptionPanel() {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-zinc-100">Transcrição de Áudio</h1>
-            <p className="text-sm text-zinc-500">Transcreva áudio para texto usando Whisper local</p>
+            <p className="text-sm text-zinc-500">Transcreva áudio para texto com faster-whisper (GPU)</p>
           </div>
         </div>
 
@@ -232,15 +242,15 @@ export function TranscriptionPanel() {
           </div>
         )}
 
-        {/* Model selector + Transcribe button */}
+        {/* Model + Mode selectors + Transcribe button */}
         {pageState === 'file_selected' && (
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <div className="relative">
               <button
                 onClick={() => setModelOpen(!modelOpen)}
                 className="h-full flex items-center gap-2 px-3 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium border border-zinc-700 transition-all"
               >
-                {model === 'auto' ? 'Auto' : model}
+                {model === 'auto' ? 'Modelo: Auto' : model}
                 <ChevronDown className="w-3.5 h-3.5" />
               </button>
               {modelOpen && (
@@ -272,6 +282,37 @@ export function TranscriptionPanel() {
                 </>
               )}
             </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setModeOpen(!modeOpen)}
+                className="h-full flex items-center gap-2 px-3 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium border border-zinc-700 transition-all"
+              >
+                {MODES.find(m => m.value === mode)?.label || 'Auto'}
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              {modeOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setModeOpen(false)} />
+                  <div className="absolute bottom-full left-0 mb-1 z-20 w-44 rounded-lg bg-zinc-800 border border-zinc-700 shadow-xl overflow-hidden">
+                    {MODES.map(m => (
+                      <button
+                        key={m.value}
+                        onClick={() => { setMode(m.value); setModeOpen(false) }}
+                        className={cn(
+                          'w-full px-3 py-2 text-left text-sm transition-colors',
+                          mode === m.value ? 'text-brand bg-brand/10' : 'text-zinc-300 hover:bg-zinc-700'
+                        )}
+                      >
+                        {m.label}
+                        <span className="text-zinc-500 text-xs block">{m.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               onClick={handleTranscribe}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand hover:bg-brand/90 text-white font-medium transition-all shadow-lg shadow-brand/20"
