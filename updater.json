@@ -1,11 +1,11 @@
 {
-"version": "0.1.54",
-  "notes": "v0.1.54: faster-whisper (GPU via CUDA) + mode presets (turbo/balanced/precision) + mode selector UI",
-  "pub_date": "2026-06-17T18:30:00Z",
+"version": "0.1.55",
+  "notes": "v0.1.55: fix Python script not bundled — embed faster_whisper_transcribe.py inline, write to temp at runtime",
+  "pub_date": "2026-06-17T18:45:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.54/AI.App.Builder.Studio_0.1.54_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.55/AI.App.Builder.Studio_0.1.55_x64-setup.exe"
     }
   }
 }

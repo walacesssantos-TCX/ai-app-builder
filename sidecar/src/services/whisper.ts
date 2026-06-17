@@ -1,17 +1,72 @@
 import { execFile, execSync } from 'child_process'
 import { writeFile, unlink, mkdtemp } from 'fs/promises'
 import { tmpdir } from 'os'
-import { join, dirname, resolve, extname } from 'path'
-import { fileURLToPath } from 'url'
+import { join } from 'path'
 import { ensureFfmpegInPath, isFfmpegAvailable, getAudioDurationSeconds } from './ffmpeg.js'
 
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const SCRIPTS_DIR = resolve(__dirname, '..', '..', 'scripts')
-const TRANSCRIBE_SCRIPT = join(SCRIPTS_DIR, 'faster_whisper_transcribe.py')
-
 const PYTHON = process.env.WHISPER_PYTHON || 'C:\\Users\\walace\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe'
+
+const TRANSCRIBE_SCRIPT_SRC = `#!/usr/bin/env python3
+import argparse, json, sys, time
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', default='tiny')
+    parser.add_argument('--device', default='cuda')
+    parser.add_argument('--compute-type', default='float16')
+    parser.add_argument('--audio-path', required=True)
+    parser.add_argument('--language')
+    parser.add_argument('--beam-size', type=int, default=5)
+    parser.add_argument('--best-of', type=int, default=5)
+    parser.add_argument('--temperature', type=float, default=0.0)
+    parser.add_argument('--batch-size', type=int, default=8)
+    parser.add_argument('--condition-on-previous-text', action='store_true', default=True)
+    parser.add_argument('--initial-prompt')
+    args = parser.parse_args()
+
+    from faster_whisper import WhisperModel
+
+    try:
+        print(f'[fw] Loading {args.model} on {args.device} ({args.compute_type})', file=sys.stderr)
+        model = WhisperModel(args.model, device=args.device, compute_type=args.compute_type)
+    except Exception as e:
+        print(f'[fw] GPU failed ({e}), fallback to CPU int8', file=sys.stderr)
+        model = WhisperModel(args.model, device='cpu', compute_type='int8')
+
+    print(f'[fw] Transcribing {args.audio_path}...', file=sys.stderr)
+    start = time.time()
+
+    kwargs = {
+        'beam_size': args.beam_size,
+        'best_of': args.best_of,
+        'temperature': args.temperature,
+        'batch_size': args.batch_size,
+        'condition_on_previous_text': args.condition_on_previous_text,
+    }
+    if args.language:
+        kwargs['language'] = args.language
+    if args.initial_prompt:
+        kwargs['initial_prompt'] = args.initial_prompt
+
+    segments, info = model.transcribe(args.audio_path, **kwargs)
+    text_parts = [s.text.strip() for s in segments]
+
+    result = {
+        'text': ' '.join(text_parts),
+        'language': info.language if info else None,
+        'duration_seconds': info.duration if info else None,
+        'elapsed_seconds': round(time.time() - start, 2),
+    }
+    print(json.dumps(result, ensure_ascii=False))
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        print(json.dumps({'error': str(e)}), file=sys.stdout)
+        sys.exit(1)
+`
 
 export type WhisperMode = 'auto' | 'turbo' | 'balanced' | 'precision'
 
@@ -84,8 +139,7 @@ export async function transcribeBuffer(
   const mode: WhisperMode = options?.mode || 'auto'
   const preset = expandMode(mode, model)
 
-  const ffmpegOk = isFfmpegAvailable()
-  if (!ffmpegOk) {
+  if (!isFfmpegAvailable()) {
     throw new Error(
       'ffmpeg não encontrado. O instalador já inclui ffmpeg, mas ele não foi localizado. ' +
       'Tente reinstalar o aplicativo ou instale manualmente: winget install ffmpeg'
@@ -94,24 +148,25 @@ export async function transcribeBuffer(
 
   const tmpDir = await mkdtemp(join(tmpdir(), 'whisper-'))
   const audioPath = join(tmpDir, fileName)
+  const scriptPath = join(tmpDir, 'faster_whisper_transcribe.py')
   const startTime = Date.now()
 
   const modelFactors: Record<string, number> = { tiny: 1, base: 2, small: 4, medium: 8, large: 16, turbo: 1.5 }
   const factor = modelFactors[model] ?? 4
-  const audioDuration = getAudioDurationSeconds(audioPath)
 
   try {
     await writeFile(audioPath, audioBuffer)
+    await writeFile(scriptPath, TRANSCRIBE_SCRIPT_SRC)
 
     ensureFfmpegInPath()
 
-    const fastDuration = getAudioDurationSeconds(audioPath)
-    const dynamicTimeout = fastDuration
-      ? Math.min(Math.max(Math.round(fastDuration * factor * 6 * 1000), 300_000), 7_200_000)
+    const audioDuration = getAudioDurationSeconds(audioPath)
+    const dynamicTimeout = audioDuration
+      ? Math.min(Math.max(Math.round(audioDuration * factor * 6 * 1000), 300_000), 7_200_000)
       : 1_800_000
 
     const args = [
-      TRANSCRIBE_SCRIPT,
+      scriptPath,
       '--model', model,
       '--audio-path', audioPath,
       '--compute-type', preset.computeType,
@@ -132,7 +187,7 @@ export async function transcribeBuffer(
     }
 
     process.stderr.write(
-      `[whisper] mode=${mode} model=${model} duration=${fastDuration ?? '?'}s timeout=${(dynamicTimeout / 1000).toFixed(0)}s\n`
+      `[whisper] mode=${mode} model=${model} duration=${audioDuration ?? '?'}s timeout=${(dynamicTimeout / 1000).toFixed(0)}s\n`
     )
 
     let stderrLog = ''
@@ -173,20 +228,14 @@ export async function transcribeBuffer(
       })
     })
 
-    if (stderrLog.toLowerCase().includes('filenotfounderror') || stderrLog.includes('WinError 2')) {
-      throw new Error(`Whisper encontrou um erro interno de sistema:\n${stderrLog.slice(0, 500)}`)
-    }
-
     let text = ''
     try {
       const parsed = JSON.parse(stdoutText)
-      if (parsed.error) {
-        throw new Error(parsed.error)
-      }
+      if (parsed.error) throw new Error(parsed.error)
       text = parsed.text || ''
     } catch (parseErr) {
       throw new Error(
-        `Não foi possível ler a saída do transcricão. Log:\n${stderrLog.slice(0, 1000)}`
+        `Não foi possível ler a saída da transcrição. Log:\n${stderrLog.slice(0, 1000)}`
       )
     }
 
@@ -202,7 +251,8 @@ export async function transcribeBuffer(
     }
   } finally {
     try {
-      if (audioPath) await unlink(audioPath).catch(() => {})
+      await unlink(audioPath).catch(() => {})
+      await unlink(scriptPath).catch(() => {})
     } catch {}
     await unlink(tmpDir).catch(() => {})
   }
