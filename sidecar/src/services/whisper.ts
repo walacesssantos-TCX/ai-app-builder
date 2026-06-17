@@ -24,6 +24,13 @@ export interface TranscribeResult {
 
 let _whisperAvailable: boolean | null = null
 
+function pickModel(bufferSize: number): 'tiny' | 'base' | 'small' {
+  const sizeMB = bufferSize / (1024 * 1024)
+  if (sizeMB > 50) return 'tiny'
+  if (sizeMB > 15) return 'base'
+  return 'small'
+}
+
 export async function isWhisperAvailable(): Promise<boolean> {
   if (_whisperAvailable !== null) return _whisperAvailable
   try {
@@ -44,7 +51,7 @@ export async function transcribeBuffer(
   fileName: string,
   options?: TranscribeOptions
 ): Promise<TranscribeResult> {
-  const model = options?.model || process.env.WHISPER_MODEL || 'medium'
+  const model = options?.model || process.env.WHISPER_MODEL || pickModel(audioBuffer.length)
 
   const ffmpegOk = isFfmpegAvailable()
   if (!ffmpegOk) {
@@ -73,12 +80,20 @@ export async function transcribeBuffer(
     await new Promise<void>((resolve, reject) => {
       const proc = execFile(PYTHON, args, { timeout: 600_000, maxBuffer: 100 * 1024 * 1024 }, (err) => {
         if (err) {
+          const nodeErr = err as NodeJS.ErrnoException & { code?: string | number; signal?: string; killed?: boolean }
           const msg = err instanceof Error ? err.message.toLowerCase() : ''
-          if (msg.includes('enoent') || msg.includes('not found') || (err as { code?: string }).code === 'ENOENT') {
+          if (msg.includes('enoent') || msg.includes('not found') || nodeErr.code === 'ENOENT') {
             reject(new Error('Python não encontrado. Verifique WHISPER_PYTHON.'))
-          } else {
-            reject(new Error(`Whisper falhou: ${err.message}. Log:\n${stderrLog.slice(0, 1000)}`))
+            return
           }
+          const exitCode = nodeErr.code ?? 'unknown'
+          const signal = nodeErr.signal ?? 'none'
+          const killed = nodeErr.killed ?? false
+          const timeoutHint = killed && signal === 'SIGTERM' ? ' (possível timeout — áudio longo demais para o modelo)' : ''
+          reject(new Error(
+            `Whisper falhou (exit: ${exitCode}, signal: ${signal}, killed: ${killed})${timeoutHint}. ` +
+            `Log:\n${stderrLog.slice(0, 1000)}`
+          ))
         } else {
           resolve()
         }

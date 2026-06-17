@@ -316,8 +316,8 @@ export const api = {
   transcription: {
     upload: (file: string, fileName: string) =>
       request<{ jobId: string; fileName: string; status: string }>('POST', '/transcribe/upload', { file, fileName }),
-    start: (jobId: string) =>
-      request<{ jobId: string; status: string; message: string }>('POST', `/transcribe/start/${jobId}`),
+    start: (jobId: string, payload?: Record<string, string>) =>
+      request<{ jobId: string; status: string; message: string }>('POST', `/transcribe/start/${jobId}`, payload),
     status: (jobId: string) =>
       request<{ jobId: string; status: string; originalFileName: string; createdAt: string; completedAt: string | null; errorMessage: string | null }>('GET', `/transcribe/status/${jobId}`),
     result: (jobId: string) =>

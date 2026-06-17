@@ -72,8 +72,8 @@ export function registerTranscribePageRoutes(fastify: FastifyInstance) {
     }
   })
 
-  fastify.post('/transcribe/start/:jobId', async (req, reply) => {
-    const { jobId } = req.params as { jobId: string }
+  fastify.post<{ Params: { jobId: string }; Body: { model?: string } }>('/transcribe/start/:jobId', async (req, reply) => {
+    const { jobId } = req.params
     const job = jobs.get(jobId)
 
     if (!job) {
@@ -94,6 +94,7 @@ export function registerTranscribePageRoutes(fastify: FastifyInstance) {
 
         const result = await transcribeBase64(job.audioBase64!, job.originalFileName, {
           language: 'pt',
+          model: (req.body.model || 'tiny') as 'tiny' | 'base' | 'small' | 'medium',
         })
 
         job.text = result.text

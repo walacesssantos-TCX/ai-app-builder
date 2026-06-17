@@ -1,7 +1,7 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.47** — última atualização: `2026-06-17T12:00:00Z`
+**v0.1.51** — última atualização: `2026-06-17T14:30:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
@@ -149,38 +149,41 @@
 | Comando /compact | Comando no chat para compactar mensagens manualmente via RTK |
 | RTK compression aprimorada | Compressão otimizada com fallback |
 
-## Rotas do Sidecar (16)
+## Rotas do Sidecar (19)
 ```
-chat | api-keys | conversations | database | deploy
+api-keys | chat | conversations | convert | database | deploy
 github | kanban | mcp-servers | mcp-skills | memory
 preview | projects | skills | subagents | supabase | templates
+transcribe-page | whisper
 ```
 
-## Serviços do Sidecar (13)
+## Serviços do Sidecar (16)
 ```
 agent-engine | context-builder | deploy | dev-server-manager
-github | llm-gateway | mcp-client | mcp-manager | rtk
-skill-scorer | subagent-manager | supabase-manager | templates
+docx | ffmpeg | github | llm-gateway | mcp-client
+mcp-manager | rtk | skill-scorer | subagent-manager
+supabase-manager | templates | whisper
 ```
 
 ## Providers de IA (8)
 Anthropic (Claude) | OpenAI (GPT) | Groq (Llama) | Gemini (Google)
 DeepSeek | Mistral | Cohere | OpenRouter
 
-## Comandos Rust (8 módulos)
+## Comandos Rust (8 módulos — inalterado)
 ```
 filesystem | terminal | skills | git | sidecar | updater | runner | skills_data
 ```
 
-## Frontend (7 seções)
+## Frontend (9 seções)
 ```
-chat/    → ChatPanel, ChatInput, HistoryPanel, useStream
+chat/    → ChatPanel, ChatInput, HistoryPanel, useStream, DocumentDownload
 editor/  → McpExplorer, DeployView, TemplatesPanel, ComparePanel, MarketplacePanel
 kanban/  → KanbanBoard
 layout/  → Sidebar, RightPanel, NetworkIndicator
-settings/→ SettingsPanel (ApiKeys, Models, UpdateSection)
+settings/→ SettingsPanel (ApiKeys, Models, UpdateSection, ThemeSection)
 skills/  → SkillsList, SkillCard
 terminal/→ TerminalPanel (skills-aware)
+theme/   → useTheme
 ```
 
 ## Builds gerados
@@ -206,7 +209,12 @@ terminal/→ TerminalPanel (skills-aware)
 | v0.1.43 | NSIS | Buildado (histórico real, /compact, arquivos+texto, OpenRouter free)
 | v0.1.44 | NSIS + MSI | Buildado (CHECKPOINT sincronizado, version sync)
 | v0.1.45 | NSIS + MSI | Buildado (Whisper integrado, transcrição automática de áudio)
-| v0.1.46 | NSIS + MSI | **Atual** (arquivos persistem no histórico, IA vê arquivos anteriores) |
+| v0.1.46 | NSIS + MSI | Buildado (arquivos persistem no histórico, IA vê arquivos anteriores) |
+| v0.1.47 | NSIS + MSI | Buildado (página de transcrição, assinatura digital do updater) |
+| v0.1.48 | NSIS + MSI | Buildado (bump + release com tema, documentos, whisper fix) |
+| v0.1.49 | NSIS + MSI | Buildado (sistema de temas completo: Escuro, Claro, Cinza) |
+| v0.1.50 | NSIS + MSI | Buildado (ffmpeg bundlado, transcrição sem instalação manual) |
+| v0.1.51 | NSIS + MSI | **Atual** (whisper: default tiny + auto-seleção + error diagnostics) |
 
 ### v0.1.45 — Whisper integrado + transcrição automática de áudio
 
@@ -229,15 +237,57 @@ terminal/→ TerminalPanel (skills-aware)
 | Whisper re-executa | Se um áudio do histórico ainda não foi transcrito, será transcrito ao re-carregar |
 | Sem migration | Usa o campo `metadata` já existente no Message (JSON com attachments) — zero mudanças no schema |
 
+### v0.1.47 — Página de transcrição + assinatura digital do updater
+
 | O quê | Detalhes |
 |-------|----------|
-| Serviço Whisper | `whisper.ts` — chama o Whisper Python local via subprocesso, salva áudio em temp, executa transcrição, retorna texto |
-| Rota `/whisper/transcribe` | Endpoint POST que aceita base64 + fileName, devolve transcrição com metadados |
-| Rota `/whisper/status` | Endpoint GET que verifica disponibilidade do Whisper |
-| Transcrição automática | `context-builder.ts` detecta arquivos de áudio (WAV, MP3, FLAC, OGG, M4A, AAC) e transcreve via Whisper antes de enviar ao LLM |
-| Skill audio-transcriber | Reescreita com frontmatter YAML + tools `transcribe_audio` e `whisper_status`, documentação da API interna |
-| Whisper local | `C:\Users\walace\AppData\Local\Python\pythoncore-3.14-64\Scripts\whisper.exe` — CPU only, modelo auto-download |
-| Variáveis de ambiente | `WHISPER_PYTHON` (caminho do Python), `WHISPER_MODEL` (padrão: `medium`) |
+| Página de transcrição | Nova rota `transcribe-page.ts` — interface dedicada para transcrição de áudio |
+| Assinatura digital | Updater agora usa chave de assinatura Tauri para validação de updates |
+| Bump versão | Cargo.toml, package.json, tauri.conf.json, updater.json → v0.1.47 |
+
+### v0.1.47b — Download de documentos + sistema de temas
+
+| O quê | Detalhes |
+|-------|----------|
+| DocumentDownload | `DocumentDownload.tsx` — componente para download inline de documentos no chat |
+| MessageBubble refatorado | `MessageBubble.tsx` — suporte a download de documentos nas mensagens |
+| Sistema de temas | `ThemeSection.tsx` + `useTheme.ts` + `settings.store.ts` — estrutura inicial de temas |
+| Conversor de documentos | Rota `convert.ts` + serviço `docx.ts` — conversão de documentos no sidecar |
+
+### v0.1.47c — Fix whisper crash (ffmpeg missing)
+
+| O quê | Detalhes |
+|-------|----------|
+| FFmpeg error handling | `whisper.ts` — detecção de ffmpeg ausente antes de iniciar transcrição |
+| Crash fix | Whisper não trava mais em ~32% quando ffmpeg não está instalado |
+
+### v0.1.49 — Sistema de temas completo
+
+| O quê | Detalhes |
+|-------|----------|
+| 3 temas completos | Escuro (padrão), Claro, Cinza — aplicados em TODAS as cores do app |
+| settings.store refatorado | Gerenciamento de estado de temas com persistência |
+| tailwind.config.js atualizado | Paletas de cores completas para cada tema |
+| index.css | Variáveis CSS para cada modo com cobertura total de componentes |
+
+### v0.1.50 — FFmpeg bundlado + transcrição sem instalação
+
+| O quê | Detalhes |
+|-------|----------|
+| ffmpeg-static | FFmpeg bundlado como dependência npm — não requer instalação manual |
+| Serviço ffmpeg.ts | `sidecar/src/services/ffmpeg.ts` — localiza e executa ffmpeg do node_modules |
+| Detecção precoce | Whisper detecta ffmpeg disponível antes de iniciar, evita crash silencioso |
+| Transcrição zero-config | Usuário não precisa instalar ffmpeg separadamente |
+
+### v0.1.51 — Whisper: default tiny + auto-seleção + diagnóstico de erro
+
+| O quê | Detalhes |
+|-------|----------|
+| Default `tiny` | `transcribe-page.ts` passava sem modelo → caía em `medium` (pesado demais para CPU). Agora usa `tiny` por padrão |
+| Auto-seleção | `pickModel()` em `whisper.ts`: >50MB→tiny, >15MB→base, senão→small |
+| Diagnóstico de erro | `whisper.ts` agora loga exit code, signal e killed — detecta timeout vs crash vs erro interno |
+| Seletor de modelo (UI) | `TranscriptionPanel.tsx` — dropdown com Auto/tiny/base/small/medium |
+| API layer | `api.ts` — `start()` aceita payload opcional com `model` |
 
 ## Estratégia de Update
 - **Resource bundled**: `updater.json` aponta para PRÓXIMA versão

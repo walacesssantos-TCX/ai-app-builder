@@ -1,11 +1,11 @@
 {
-  "version": "0.1.50",
-  "notes": "ffmpeg bundlado no instalador — transcricao de audio funciona sem instalacao manual. Whisper encontra ffmpeg automaticamente via ffmpeg-static.",
-  "pub_date": "2026-06-17T16:00:00Z",
+"version": "0.1.51",
+  "notes": "v0.1.51: default whisper model tiny + auto-selection + error diagnostics",
+  "pub_date": "2026-06-17T14:30:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUZXNNL3JUclpreitvNnZ0SFJKUjQxT0NVeW5sSkJwRzBZN2ZCVGRmOVdhVXdUVGx5L3NUMU5PcDcwMU5heFc1U3d2NStEcUREOUlMNXQ1aEh3aEFYdWZKYkdXREh5L0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzA5MjUyCWZpbGU6aW5zdGFsbGVyLmV4ZQpRQ3JtbUlOM2QxU1JhQ0VTUHg4TlVabFlaazBOTGtnSHhZTjNuVFZFZzVJMGhVS0xkM0UzZUU3b2x1WVlpRGlpMlhCVmswbFVxRU42TGR3WTVGQnVBZz09Cg==",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.50/AI.App.Builder.Studio_0.1.50_x64-setup.exe"
+      "signature": "",
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.51/AI.App.Builder.Studio_0.1.51_x64-setup.exe"
     }
   }
 }

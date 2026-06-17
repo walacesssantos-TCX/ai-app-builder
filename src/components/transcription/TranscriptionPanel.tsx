@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { AudioWaveform, Upload, FileAudio, Loader2, Download, RotateCcw, AlertCircle, CheckCircle2, Play } from 'lucide-react'
+import { AudioWaveform, Upload, FileAudio, Loader2, Download, RotateCcw, AlertCircle, CheckCircle2, Play, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
 
 type PageState = 'idle' | 'file_selected' | 'uploading' | 'transcribing' | 'done' | 'error'
+
+const MODELS = ['tiny', 'base', 'small', 'medium'] as const
 
 const ALLOWED_EXTS = ['.mp3', '.wav', '.m4a', '.ogg', '.flac']
 const MAX_FILE_SIZE = 75 * 1024 * 1024
@@ -30,6 +32,8 @@ function toBase64(file: File): Promise<string> {
 export function TranscriptionPanel() {
   const [pageState, setPageState] = useState<PageState>('idle')
   const [file, setFile] = useState<File | null>(null)
+  const [model, setModel] = useState<string>('auto')
+  const [modelOpen, setModelOpen] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [resultText, setResultText] = useState<string>('')
   const [errorMsg, setErrorMsg] = useState<string>('')
@@ -110,7 +114,9 @@ export function TranscriptionPanel() {
       const uploadRes = await api.transcription.upload(base64, file.name)
       setJobId(uploadRes.jobId)
 
-      await api.transcription.start(uploadRes.jobId)
+      const payload: Record<string, string> = {}
+      if (model !== 'auto') payload.model = model
+      await api.transcription.start(uploadRes.jobId, payload)
       startPolling(uploadRes.jobId)
     } catch (err) {
       stopPolling()
@@ -226,15 +232,54 @@ export function TranscriptionPanel() {
           </div>
         )}
 
-        {/* Transcribe button */}
+        {/* Model selector + Transcribe button */}
         {pageState === 'file_selected' && (
-          <button
-            onClick={handleTranscribe}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand hover:bg-brand/90 text-white font-medium transition-all shadow-lg shadow-brand/20"
-          >
-            <Play className="w-4 h-4" />
-            Transcrever Áudio
-          </button>
+          <div className="flex gap-3">
+            <div className="relative">
+              <button
+                onClick={() => setModelOpen(!modelOpen)}
+                className="h-full flex items-center gap-2 px-3 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium border border-zinc-700 transition-all"
+              >
+                {model === 'auto' ? 'Auto' : model}
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              {modelOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
+                  <div className="absolute bottom-full left-0 mb-1 z-20 w-36 rounded-lg bg-zinc-800 border border-zinc-700 shadow-xl overflow-hidden">
+                    <button
+                      onClick={() => { setModel('auto'); setModelOpen(false) }}
+                      className={cn(
+                        'w-full px-3 py-2 text-left text-sm transition-colors',
+                        model === 'auto' ? 'text-brand bg-brand/10' : 'text-zinc-300 hover:bg-zinc-700'
+                      )}
+                    >
+                      Auto <span className="text-zinc-500 text-xs block">recomendado</span>
+                    </button>
+                    {MODELS.map(m => (
+                      <button
+                        key={m}
+                        onClick={() => { setModel(m); setModelOpen(false) }}
+                        className={cn(
+                          'w-full px-3 py-2 text-left text-sm transition-colors',
+                          model === m ? 'text-brand bg-brand/10' : 'text-zinc-300 hover:bg-zinc-700'
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={handleTranscribe}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand hover:bg-brand/90 text-white font-medium transition-all shadow-lg shadow-brand/20"
+            >
+              <Play className="w-4 h-4" />
+              Transcrever Áudio
+            </button>
+          </div>
         )}
 
         {/* Progress states */}
