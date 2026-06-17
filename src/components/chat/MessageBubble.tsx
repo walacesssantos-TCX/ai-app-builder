@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types'
+import { DocumentDownload } from './DocumentDownload'
 
 interface MessageBubbleProps {
   message: Message
@@ -125,34 +126,37 @@ export function MessageBubble({ message, compact }: MessageBubbleProps) {
         {isUser ? (
           <p className={cn(compact ? 'text-xs' : 'text-sm', 'whitespace-pre-wrap')}>{message.content}</p>
         ) : (
-          <div className={cn('prose max-w-none', compact ? 'prose-xs' : 'prose-invert prose-sm')}>
-            <ReactMarkdown
-              components={{
-                code: ({ className, children, ...props }) => {
-                  const isInline = !className
-                  if (isInline) {
+          <>
+            <div className={cn('prose max-w-none', compact ? 'prose-xs' : 'prose-invert prose-sm')}>
+              <ReactMarkdown
+                components={{
+                  code: ({ className, children, ...props }) => {
+                    const isInline = !className
+                    if (isInline) {
+                      return (
+                        <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-sm text-gold-300" {...props}>
+                          {children}
+                        </code>
+                      )
+                    }
                     return (
-                      <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-sm text-gold-300" {...props}>
-                        {children}
-                      </code>
+                      <pre className={cn(
+                        'bg-zinc-900 rounded-lg overflow-x-auto border border-zinc-700',
+                        compact ? 'p-2 my-1 text-xs' : 'p-4 my-2'
+                      )}>
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      </pre>
                     )
-                  }
-                  return (
-                    <pre className={cn(
-                      'bg-zinc-900 rounded-lg overflow-x-auto border border-zinc-700',
-                      compact ? 'p-2 my-1 text-xs' : 'p-4 my-2'
-                    )}>
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    </pre>
-                  )
-                },
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
-          </div>
+                  },
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
+            <DocumentDownload content={message.content} />
+          </>
         )}
       </div>
     </div>

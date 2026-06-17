@@ -4,6 +4,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== THEME SYSTEM ===== */
+:root {
+  --brand: #CC0000;
+  --brand-50: #FFF0F0;
+  --brand-100: #FFD6D6;
+  --brand-200: #FFA8A8;
+  --brand-300: #FF7070;
+  --brand-400: #FF3838;
+  --brand-500: #CC0000;
+  --brand-600: #A30000;
+  --brand-700: #7A0000;
+  --brand-800: #520000;
+  --brand-900: #2B0000;
+  --brand-950: #140000;
+  --gold: #C9950E;
+  --gold-50: #FEF8E7;
+  --gold-100: #FDEFC3;
+  --gold-200: #FBDF87;
+  --gold-300: #F7C940;
+  --gold-400: #D4A017;
+  --gold-500: #C9950E;
+  --gold-600: #A0770B;
+  --gold-700: #775809;
+  --gold-800: #4F3A06;
+  --gold-900: #281D03;
+  --gold-950: #140F01;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -24,7 +52,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar — brand red track */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -44,15 +72,13 @@ body {
   background: #524734;
 }
 
-/* Brand red selection */
 ::selection {
-  background: rgba(204, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
   color: #FAF8F5;
 }
 
-/* Focus ring — brand red */
 *:focus-visible {
-  outline: 2px solid rgba(204, 0, 0, 0.6);
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
   outline-offset: 2px;
 }
 
@@ -63,11 +89,11 @@ button, a, input, textarea, select {
 
 /* Subtle glow for brand elements */
 .brand-glow {
-  box-shadow: 0 0 15px rgba(204, 0, 0, 0.1);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--brand) 10%, transparent);
 }
 
 .gold-glow {
-  box-shadow: 0 0 15px rgba(201, 149, 14, 0.1);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
 /* Typography improvements */
@@ -83,10 +109,10 @@ code, pre {
 .prose-invert {
   --tw-prose-body: #D9D2C4;
   --tw-prose-headings: #FAF8F5;
-  --tw-prose-links: #FF3838;
+  --tw-prose-links: var(--brand-400);
   --tw-prose-bold: #FAF8F5;
-  --tw-prose-code: #F7C940;
+  --tw-prose-code: var(--gold-300);
   --tw-prose-pre-bg: #1C1810;
   --tw-prose-quotes: #BFB5A0;
-  --tw-prose-quote-borders: #CC0000;
+  --tw-prose-quote-borders: var(--brand);
 }

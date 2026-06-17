@@ -19,6 +19,7 @@ import { NetworkIndicator } from '@/components/layout/NetworkIndicator'
 import { useProjectStore } from '@/stores/project.store'
 import { useChatStore } from '@/stores/chat.store'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/hooks/useTheme'
 
 const SIDECAR_URL = 'http://127.0.0.1:3001'
 
@@ -61,6 +62,8 @@ export default function App() {
   const [terminalOpen, setTerminalOpen] = useState(false)
   const { loadProjects } = useProjectStore()
   const loadConversations = useChatStore((s) => s.loadConversations)
+
+  useTheme()
 
   useEffect(() => {
     loadProjects()
