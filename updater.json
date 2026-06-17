@@ -1,11 +1,11 @@
 {
-  "version": "0.1.46",
-  "notes": "Arquivos de áudio agora persistem no histórico da conversa — a IA pode referenciar arquivos enviados anteriormente. Correção: chat.ts extrai files do metadata das mensagens e re-injeta no buildContext em mensagens seguintes.",
-  "pub_date": "2026-06-16T12:00:00Z",
+  "version": "0.1.47",
+  "notes": "Nova página de transcrição de áudio com arrastar e soltar, progresso em tempo real e download em .docx.",
+  "pub_date": "2026-06-17T12:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.46/AI.App.Builder.Studio_0.1.46_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUZXNNL3JUclprejQ5ZkN0RUxURWRkeHhZMVpTQVQzL3JYdWhHTVRtWEw3Z2F2dkZrdnh0TzJFNXBKNnJrcUJhVWVQY2NuUHcveUFNN0NMbnRDZVlhc2RkUDZsV2I1T0E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzA1Njc5CWZpbGU6aW5zdGFsbGVyLmV4ZQpIUFhCa2F1MFl1dHhaRFlYcEJRcWVRZmZ6YVdNZVVodWRGU3NjeVpqazV0MnJRczlRTytOWWlZUko5MVJWaGUzZ09Ra0UxVDdOc1VrMlJtWTVkdk5EQT09Cg==",
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.47/AI.App.Builder.Studio_0.1.47_x64-setup.exe"
     }
   }
 }
