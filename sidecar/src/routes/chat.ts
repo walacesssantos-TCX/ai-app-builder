@@ -90,7 +90,7 @@ function createTools(projectPath?: string): AgentTool[] {
     },
     {
       name: 'run_command',
-      description: 'Execute a shell command (PowerShell on Windows)',
+      description: 'Execute a shell command',
       execute: async (params: Record<string, unknown>) => {
         const command = params.command as string
         if (!command) return 'Error: command is required'
@@ -99,6 +99,7 @@ function createTools(projectPath?: string): AgentTool[] {
             encoding: 'utf-8',
             timeout: 30000,
             cwd: projectPath || undefined,
+            shell: true,
           })
           return output.slice(0, 5000)
         } catch (e: unknown) {
@@ -124,16 +125,17 @@ function createTools(projectPath?: string): AgentTool[] {
     },
     {
       name: 'search_files',
-      description: 'Search for text in files (uses findstr on Windows)',
+      description: 'Search for text in files',
       execute: async (params: Record<string, unknown>) => {
         const pattern = params.pattern as string
-        const path = (params.path as string) || projectPath || '.'
+        const searchPath = (params.path as string) || projectPath || '.'
         if (!pattern) return 'Error: pattern is required'
+        const isWin = process.platform === 'win32'
         try {
-          const output = execSync(
-            `findstr /s /n /i "${pattern}" "${path}\\*"`,
-            { encoding: 'utf-8', timeout: 15000 }
-          )
+          const cmd = isWin
+            ? `findstr /s /n /i "${pattern}" "${searchPath}\\*"`
+            : `grep -r -n -i "${pattern}" "${searchPath}"`
+          const output = execSync(cmd, { encoding: 'utf-8', timeout: 15000, shell: true })
           return output.slice(0, 5000)
         } catch {
           return 'No matches found or search error'

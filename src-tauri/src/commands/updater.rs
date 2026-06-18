@@ -98,7 +98,9 @@ fn get_default_updater_paths() -> Vec<String> {
         }
     }
     if cfg!(debug_assertions) {
-        paths.push("D:\\Projeto Fluxcodex\\ai-app-builder\\updater.json".into());
+        if let Ok(cwd) = std::env::current_dir() {
+            paths.push(cwd.join("updater.json").to_string_lossy().to_string());
+        }
     }
     paths.push("./updater.json".into());
     paths
@@ -227,15 +229,23 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
     let url = match installer {
         Some(a) => a.browser_download_url.clone(),
         None => {
-            // fallback: construct the URL from tag
-            #[cfg(windows)]
-            let fallback_name = format!("AI.App.Builder.Studio_{}_x64-setup.exe", tag_version);
-            #[cfg(not(windows))]
-            let fallback_name = format!("AI App Builder Studio_{}_amd64.deb", tag_version);
-            format!(
-                "https://github.com/{}/{}/releases/download/{}/{}",
-                GH_OWNER, GH_REPO, release.tag_name, fallback_name
-            )
+            // Try broader match (any .deb or .exe with the tag version)
+            let broader = release.assets.iter().find(|a| {
+                a.name.contains(tag_version) && (a.name.ends_with(".deb") || a.name.ends_with(".exe"))
+            });
+            if let Some(a) = broader {
+                a.browser_download_url.clone()
+            } else {
+                // fallback: construct the URL from tag
+                #[cfg(windows)]
+                let fallback_name = format!("AI.App.Builder.Studio_{}_x64-setup.exe", tag_version);
+                #[cfg(not(windows))]
+                let fallback_name = format!("AI.App.Builder.Studio_{}_amd64.deb", tag_version);
+                format!(
+                    "https://github.com/{}/{}/releases/download/{}/{}",
+                    GH_OWNER, GH_REPO, release.tag_name, fallback_name
+                )
+            }
         }
     };
 

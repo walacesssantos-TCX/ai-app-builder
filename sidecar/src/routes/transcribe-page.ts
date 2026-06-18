@@ -189,7 +189,8 @@ export function registerTranscribePageRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Arquivo .docx não encontrado em disco.' })
     }
 
-    const stream = require('fs').createReadStream(job.docxPath)
+    const { createReadStream } = await import('fs')
+    const stream = createReadStream(job.docxPath)
     const title = path.parse(job.originalFileName).name
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
     const downloadName = `${title}_${dateStr}.docx`

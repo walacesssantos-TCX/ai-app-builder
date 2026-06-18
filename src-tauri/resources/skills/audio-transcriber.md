@@ -44,7 +44,11 @@ curl -X POST http://127.0.0.1:3001/whisper/transcribe \
 
 ### Método 3 — Linha de comando direta
 
-```powershell
+```bash
+# Linux/macOS
+python3 -m whisper "/caminho/audio.mp3" --model medium --output_format txt
+
+# Windows (PowerShell)
 python -m whisper "C:\caminho\audio.mp3" --model medium --output_format txt
 ```
 
@@ -68,7 +72,7 @@ O sidecar usa estas variáveis de ambiente (opcionais):
 
 | Variável | Padrão | Descrição |
 |----------|--------|-----------|
-| `WHISPER_PYTHON` | `C:\Users\walace\AppData\Local\Python\pythoncore-3.14-64\python.exe` | Caminho do Python com Whisper instalado |
+| `WHISPER_PYTHON` | `python3` (Linux/macOS) `python` (Windows) | Caminho do Python com Whisper instalado |
 | `WHISPER_MODEL` | `medium` | Modelo padrão para transcrições |
 
 ## Integração automática

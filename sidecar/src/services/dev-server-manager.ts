@@ -62,7 +62,10 @@ export class DevServerManager extends EventEmitter {
       }
       this.servers.set(projectPath, info)
 
-      const child = spawn('cmd.exe', ['/c', command], {
+      const isWin = process.platform === 'win32'
+      const shell = isWin ? 'cmd.exe' : 'bash'
+      const shellArgs = isWin ? ['/c'] : ['-c']
+      const child = spawn(shell, [...shellArgs, command], {
         cwd: projectPath,
         stdio: ['ignore', 'pipe', 'pipe'],
         shell: false,

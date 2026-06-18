@@ -15,6 +15,16 @@
           "name": "cmd",
           "cmd": "cmd.exe",
           "args": true
+        },
+        {
+          "name": "bash",
+          "cmd": "bash",
+          "args": true
+        },
+        {
+          "name": "sh",
+          "cmd": "sh",
+          "args": true
         }
       ]
     },

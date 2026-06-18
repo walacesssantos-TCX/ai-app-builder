@@ -1,19 +1,20 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.56** — última atualização: `2026-06-17T14:30:00Z`
+**v0.1.58** — última atualização: `2026-06-18T17:00:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
 - Sidecar Node.js (Fastify) em `sidecar/`, roda em `http://localhost:3001`
 - Vite dev server em `http://localhost:1420`
 - RTK (Rust Token Killer) ativo via hook global
-- Instaladores: NSIS em `src-tauri/target/release/bundle/`
-- Chave de assinatura em `~\.tauri\ai-updater.key`
+- Instaladores: `.deb` (Linux) + NSIS (Windows) em `src-tauri/target/release/bundle/`
+- Chave de assinatura em `~/.tauri/ai-updater.key` (Linux) ou `~\.tauri\ai-updater.key` (Windows)
 - Prisma + SQLite (`aibuilder.db`) no sidecar
 - App 100% API-based (Groq, Anthropic, OpenAI, Gemini, DeepSeek, Mistral, Cohere, OpenRouter)
-- Sidecar com log para `%TEMP%\aibuilder-sidecar.log`
-- Updater com log para `%TEMP%\aibuilder-updater.log`
+- Sidecar com log para `$TMPDIR/aibuilder-sidecar.log` (Linux) ou `%TEMP%\aibuilder-sidecar.log` (Windows)
+- Updater com log para `$TMPDIR/aibuilder-updater.log` (Linux) ou `%TEMP%\aibuilder-updater.log` (Windows)
+- **Cross-platform**: shell/bash no Linux, cmd.exe no Windows
 
 ## O que foi implementado até v0.1.12
 
@@ -214,7 +215,10 @@ theme/   → useTheme
 | v0.1.48 | NSIS + MSI | Buildado (bump + release com tema, documentos, whisper fix) |
 | v0.1.49 | NSIS + MSI | Buildado (sistema de temas completo: Escuro, Claro, Cinza) |
 | v0.1.50 | NSIS + MSI | Buildado (ffmpeg bundlado, transcrição sem instalação manual) |
-| v0.1.51 | NSIS + MSI | **Atual** (whisper: default tiny + auto-seleção + error diagnostics) |
+| v0.1.51 | NSIS + MSI | Buildado (whisper: default tiny + auto-seleção + error diagnostics) |
+| v0.1.56 | .deb + NSIS | Buildado (Linux compatibility — sidecar, ffmpeg, Whisper CPU, updater) |
+| v0.1.57 | .deb + NSIS | Buildado (Linux CI/CD release, permissions fix, updater Linux) |
+| v0.1.58 | .deb + NSIS | **Atual** (Linux full adaptation, transcription 500 fix, updater URL fix) |
 
 ### v0.1.45 — Whisper integrado + transcrição automática de áudio
 
@@ -289,19 +293,72 @@ theme/   → useTheme
 | Seletor de modelo (UI) | `TranscriptionPanel.tsx` — dropdown com Auto/tiny/base/small/medium |
 | API layer | `api.ts` — `start()` aceita payload opcional com `model` |
 
+### v0.1.56 — Linux compatibility: sidecar, ffmpeg, Whisper CPU, updater
+
+| O quê | Detalhes |
+|-------|----------|
+| Sidecar Linux | Auto-start no app launch: `get_sidecar_dir`, `node` path, `pkill` antes de spawn, XDG paths |
+| ffmpeg Linux | `ffmpeg.ts` — remove Windows-only `ffmpeg-static`/`ffprobe-static`, usa system `ffmpeg`/`ffprobe` |
+| Whisper Linux | `whisper.ts` — usa venv Python (`/usr/bin/python3`), mensagem de erro `apt install`, default `cpu+int8` |
+| Output path Linux | `useStream.ts` — transcrição salva em `/home/walace/Music/Fluxcodex` |
+| Checkpoint | Cabeçalho atualizado para v0.1.56 |
+| Skills data | `skills_data.rs` + vários `.md` — reescrita de skills built-in com frontmatter YAML |
+
+### v0.1.57 — Linux CI/CD, release .deb, updater Linux
+
+| O quê | Detalhes |
+|-------|----------|
+| CI/CD Linux | `.github/workflows/release.yml` — GitHub Action para buildar e publicar `.deb` no tag push |
+| permissions fix | `contents:write` adicionado ao workflow de release |
+| resources fix | `resources/node` glob removido do `tauri.conf.json` (não existe em CI) |
+| Updater Linux | `updater.rs` — detecta `.deb` no Linux, usa `pkexec` para instalar, paths platform-aware |
+| Transcribe tmp dir | `transcribe-page.ts` — usa `os.tmpdir()` em vez de `__dirname/../tmp` (writable em Linux) |
+| updater.json | Adicionada entry `linux-x86_64` com URL .deb |
+| .gitignore | Ignora `sidecar/whisper-env/` |
+| Linux schema | `linux-schema.json` gerado para build Linux |
+| Bump versão | All 4 files → v0.1.57 |
+
+### v0.1.58 — Linux full adaptation + transcription HTTP 500 fix
+
+| O quê | Detalhes |
+|-------|----------|
+| Shell cross-platform | `terminal.rs` — detecta `cfg!(target_os)` para usar `bash` no Linux, `cmd.exe` no Windows |
+| Capabilities Tauri | `default.json` — adiciona `bash` e `sh` como shells permitidos |
+| Cargo config | `.cargo/config.toml` — comentados linkers Windows (não bloqueiam build Linux) |
+| Updater path dev | `updater.rs` — `D:\` hardcoded → `cwd.join("updater.json")` |
+| Terminal UI cross-platform | `TerminalPanel.tsx` — nova `isWindows()`, `getDefaultCwd()`, `getPathSep()`; normalizeCwd com `/`; prompt `$`/`>`; banner sem Windows; mock ls estilo Linux; erros bash-style |
+| Sidecar shell cross-platform | `dev-server-manager.ts`, `agent-engine.ts`, `subagent-manager.ts` — `shell: 'cmd.exe'` → `isWin ? 'cmd.exe' : true` |
+| Env vars cross-platform | `agent-engine.ts`, `subagent-manager.ts` — `set "TOOL_X=y"` → `export TOOL_X=y` no Linux |
+| findstr → grep | `chat.ts` — `search_files` usa `findstr` no Windows, `grep -r` no Linux; descrição sem "PowerShell" |
+| run_command shell | `chat.ts` — `execSync` com `shell: true` (pipes/complexos funcionam em ambos OS) |
+| Python fallback | `whisper.ts` — `python3` no Linux, `python` no Windows |
+| isWhisperAvailable shell | `whisper.ts` — `execSync` sem `shell` → adicionado `shell: true` (quebraria no Linux) |
+| ffmpeg error message | `whisper.ts` — `sudo apt install` → mensagem cross-platform (winget/brew/apt/dnf) |
+| ensureFfmpegInPath | `ffmpeg.ts` — função vazia → implementada com hint cross-platform |
+| require() em ESM | `transcribe-page.ts` — `require('fs')` → `await import('fs')` (**causa do HTTP 500**) |
+| Docs cross-platform | `audio-transcriber.md` — exemplos Windows + Linux, WHISPER_PYTHON sem path hardcoded |
+| Session/Checkpoint | CHECKPOINT.md + SESSION.md atualizados |
+
 ## Estratégia de Update
 - **Resource bundled**: `updater.json` aponta para PRÓXIMA versão
-- **Dev path**: `D:\Projeto Fluxcodex\ai-app-builder\updater.json` aponta para versão corrente
+- **Linux**: `.deb` instalado via `pkexec dpkg -i`, arquitetura `x86_64` detectada via `uname -m`
+- **Dev path**: `cwd/updater.json` (cross-platform, detectado automaticamente)
 - **GitHub Releases**: updater também consulta `github.com/walacesssantos-TCX/ai-app-builder/releases`
 
 ## Comandos úteis
-```powershell
-# Dev
-cd D:\Projeto Fluxcodex\ai-app-builder
-npm run dev          # Frontend Vite
-cd sidecar && npm run dev  # Sidecar
+```bash
+# Dev (Linux)
+export FLUXCODEX_ROOT="/media/walace/windows 10/Projeto Fluxcodex"
+cd "$FLUXCODEX_ROOT/ai-app-builder"
+npm run dev            # Frontend Vite (http://localhost:1420)
+cd sidecar && npm run dev  # Sidecar (http://localhost:3001)
 
-# Build
+# Build Linux
+export TAURI_SIGNING_PRIVATE_KEY_PATH="$HOME/.tauri/ai-updater.key"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+npx tauri build --bundles deb
+
+# Build Windows (PowerShell)
 $env:TAURI_SIGNING_PRIVATE_KEY_PATH = "$env:USERPROFILE\.tauri\ai-updater.key"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
 npx tauri build

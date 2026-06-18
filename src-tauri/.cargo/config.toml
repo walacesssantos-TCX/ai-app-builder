@@ -1,6 +1,6 @@
 [target.x86_64-pc-windows-msvc]
-linker = "C:\\LLVM\\bin\\lld-link.exe"
-rustflags = ["-C", "link-arg=/MACHINE:x64"]
+# linker = "C:\\LLVM\\bin\\lld-link.exe"
+# rustflags = ["-C", "link-arg=/MACHINE:x64"]
 
 [target.x86_64-pc-windows-gnu]
-linker = "C:\\mingw64\\bin\\x86_64-w64-mingw32-gcc.exe"
+# linker = "C:\\mingw64\\bin\\x86_64-w64-mingw32-gcc.exe"

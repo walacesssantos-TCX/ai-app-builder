@@ -12,6 +12,24 @@ function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 }
 
+function isWindows(): boolean {
+  if (typeof navigator !== 'undefined' && navigator.userAgent) {
+    return navigator.userAgent.includes('Windows')
+  }
+  if (typeof process !== 'undefined' && process.platform) {
+    return process.platform === 'win32'
+  }
+  return false
+}
+
+function getDefaultCwd(): string {
+  return isWindows() ? 'C:\\' : '/home/developer'
+}
+
+function getPathSep(): string {
+  return isWindows() ? '\\' : '/'
+}
+
 interface TerminalPanelProps {
   onClose?: () => void
 }
@@ -51,31 +69,37 @@ function normalizeCwd(cwd: string, command: string): string {
 
   const dir = trimmed.slice(3).trim()
   if (!dir) return cwd
+  const sep = getPathSep()
 
   if (dir === '..') {
     const parts = cwd.replace(/\/$/, '').split(/[\\/]/)
     if (parts.length > 1) {
       parts.pop()
-      return parts.join('\\')
+      return parts.join(sep)
     }
-    return cwd
+    return isWindows() ? cwd[0] + ':\\' : '/'
   }
 
   if (dir === '\\' || dir === '/') {
-    return cwd[0] + ':\\'
+    return isWindows() ? cwd[0] + ':\\' : '/'
   }
 
   if (/^[a-zA-Z]:/.test(dir)) {
     return dir.replace(/\//g, '\\')
   }
 
-  const sep = cwd.endsWith('\\') ? '' : '\\'
-  return (cwd + sep + dir).replace(/\//g, '\\')
+  if (dir.startsWith('/')) {
+    return dir
+  }
+
+  const glue = cwd.endsWith(sep) ? '' : sep
+  return cwd + glue + dir
 }
 
 export function TerminalPanel({ onClose }: TerminalPanelProps) {
+  const defaultShell = isWindows() ? 'cmd' : 'bash'
   const [sessions, setSessions] = useState<SessionInfo[]>([
-    { id: '1', title: 'cmd' },
+    { id: '1', title: defaultShell },
   ])
   const [activeSession, setActiveSession] = useState('1')
   const [height, setHeight] = useState(250)
@@ -106,7 +130,7 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
     }
 
     try {
-      const cwd = cwdRef.current.get(sessionId) || 'C:\\'
+      const cwd = cwdRef.current.get(sessionId) || getDefaultCwd()
       await createTerminal(sessionId, cwd)
 
       setupTauriTerminal(sessionId)
@@ -158,8 +182,12 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
       showSkillsBanner(term, '', '')
     }
 
-    term.writeln('Microsoft Windows [Version 10.0.22621.xxxx]')
-    term.writeln('(c) Microsoft Corporation. Todos os direitos reservados.')
+    if (isWindows()) {
+      term.writeln('Microsoft Windows [Version 10.0.22621.xxxx]')
+      term.writeln('(c) Microsoft Corporation. Todos os direitos reservados.')
+    } else {
+      term.writeln(`Linux ${navigator?.platform || ''} - Terminal Fluxcodex`)
+    }
     prompt(term, sessionId)
 
     setupInputHandler(term, sessionId, false)
@@ -198,7 +226,7 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
           histIdx.set(sessionId, hist.length)
 
           if (cmdLine.toLowerCase().startsWith('cd ')) {
-            const curCwd = cwd.get(sessionId) || 'C:\\'
+            const curCwd = cwd.get(sessionId) || getDefaultCwd()
             const newCwd = normalizeCwd(curCwd, cmdLine)
             cwd.set(sessionId, newCwd)
           }
@@ -360,7 +388,7 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
   }
 
   const handleMockCommand = (term: Terminal, sessionId: string, command: string) => {
-    const cwd = cwdRef.current.get(sessionId) || 'C:\\'
+    const cwd = cwdRef.current.get(sessionId) || getDefaultCwd()
     const lower = command.trim().toLowerCase()
 
     if (lower === 'cls' || lower === 'clear') {
@@ -376,15 +404,24 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
     }
 
     if (lower === 'dir' || lower === 'ls') {
-      term.writeln(` Directory of ${cwd}`)
-      term.writeln('')
-      term.writeln('06/16/2026  10:00 AM    <DIR>          .')
-      term.writeln('06/16/2026  10:00 AM    <DIR>          ..')
-      term.writeln('06/16/2026  10:00 AM             1,234 index.ts')
-      term.writeln('06/16/2026  09:30 AM               567 package.json')
-      term.writeln('06/16/2026  08:00 AM    <DIR>          src')
-      term.writeln('               2 File(s)          1,801 bytes')
-      term.writeln('               3 Dir(s)  100,000,000,000 bytes free')
+      if (isWindows()) {
+        term.writeln(` Directory of ${cwd}`)
+        term.writeln('')
+        term.writeln('06/16/2026  10:00 AM    <DIR>          .')
+        term.writeln('06/16/2026  10:00 AM    <DIR>          ..')
+        term.writeln('06/16/2026  10:00 AM             1,234 index.ts')
+        term.writeln('06/16/2026  09:30 AM               567 package.json')
+        term.writeln('06/16/2026  08:00 AM    <DIR>          src')
+        term.writeln('               2 File(s)          1,801 bytes')
+        term.writeln('               3 Dir(s)  100,000,000,000 bytes free')
+      } else {
+        term.writeln(`total 12`)
+        term.writeln('drwxr-xr-x  3 developer developer  128 Jun 16 10:00 .')
+        term.writeln('drwxr-xr-x  3 developer developer  128 Jun 16 10:00 ..')
+        term.writeln('-rw-r--r--  1 developer developer 1234 Jun 16 10:00 index.ts')
+        term.writeln('-rw-r--r--  1 developer developer  567 Jun 16 09:30 package.json')
+        term.writeln('drwxr-xr-x  2 developer developer   96 Jun 16 08:00 src')
+      }
       prompt(term, sessionId)
       return
     }
@@ -431,13 +468,18 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
       return
     }
 
-    term.writeln(`'${command.split(' ')[0]}' não é reconhecido como comando interno (simulação)`)
+    const cmd = command.split(' ')[0]
+    const msg = isWindows()
+      ? `'${cmd}' não é reconhecido como comando interno (simulação)`
+      : `bash: ${cmd}: command not found (simulação)`
+    term.writeln(msg)
     prompt(term, sessionId)
   }
 
   const prompt = (term: Terminal, sessionId: string) => {
-    const cwd = cwdRef.current.get(sessionId) || 'C:\\'
-    term.write(`\r\n${cwd}> `)
+    const cwd = cwdRef.current.get(sessionId) || getDefaultCwd()
+    const ps = isWindows() ? '>' : '$'
+    term.write(`\r\n${cwd} ${ps} `)
   }
 
   const initTerminal = useCallback((sessionId: string) => {
@@ -464,7 +506,7 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
     terminalsRef.current.set(sessionId, term)
     fitAddonsRef.current.set(sessionId, fitAddon)
     lineBufRef.current.set(sessionId, '')
-    cwdRef.current.set(sessionId, 'C:\\')
+    cwdRef.current.set(sessionId, getDefaultCwd())
     cmdHistoryRef.current.set(sessionId, [])
     histIdxRef.current.set(sessionId, 0)
 
@@ -476,9 +518,9 @@ export function TerminalPanel({ onClose }: TerminalPanelProps) {
 
   const addSession = () => {
     const id = String(nextId.current++)
-    setSessions(prev => [...prev, { id, title: `cmd ${id}` }])
+    setSessions(prev => [...prev, { id, title: `${defaultShell} ${id}` }])
     setActiveSession(id)
-    cwdRef.current.set(id, 'C:\\')
+    cwdRef.current.set(id, getDefaultCwd())
     lineBufRef.current.set(id, '')
     cmdHistoryRef.current.set(id, [])
     histIdxRef.current.set(id, 0)

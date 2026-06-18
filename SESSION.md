@@ -1,51 +1,102 @@
-# SESSION — 16/06/2026
+# SESSION — 18/06/2026
 
 ## O que foi implementado
 
-### v0.1.45 — Whisper local integrado + transcrição automática de áudio
+### Linux Full Adaptation + Transcription HTTP 500 Fix
 
-**Motivação:** Permitir que a skill `audio-transcriber` e o chat transcrevam áudio localmente via Whisper (Python) sem depender de APIs externas.
+**Motivação:** Tornar o projeto totalmente funcional em Linux (o terminal e sidecar tinham dezenas de hardcoded Windows paths/shells) e corrigir o erro HTTP 500 na página de transcrição causado por `require()` em módulo ESM.
 
-### 1. Serviço Whisper (`sidecar/src/services/whisper.ts`)
-- Função `transcribeBuffer(audioBuffer, fileName, options?)` — salva áudio em temp, executa `python -m whisper`, lê o `.txt` de saída, limpa temp
-- Função `transcribeBase64(base64, fileName, options?)` — wrapper para base64
-- Função `isWhisperAvailable()` — verifica se o Python + whisper estão instalados
-- Suporte a modelos: tiny, base, small, medium, turbo, large
-- Timeout de 10min para transcrições longas
-- Limpeza automática de arquivos temporários
+---
 
-### 2. Rota Whisper (`sidecar/src/routes/whisper.ts`)
-- `POST /whisper/transcribe` — aceita `{ file: base64, fileName, model?, language? }`, retorna `{ success, text, segments, duration, model, language }`
-- `GET /whisper/status` — retorna `{ available, python }`
+## Linux Adaptation — 12 arquivos modificados
 
-### 3. Registro no Sidecar (`sidecar/src/index.ts`)
-- `registerWhisperRoutes(fastify)` registrado ao final da inicialização
+### 1. Terminal Tauri (`src-tauri/src/commands/terminal.rs`)
+- **Linha 89:** `Command::new("cmd.exe")` → `cfg!(target_os)` condicional: `bash` no Linux, `cmd.exe` no Windows
 
-### 4. Transcrição automática no context-builder (`context-builder.ts`)
-- Detecta arquivos de áudio por extensão (`.wav`, `.mp3`, `.flac`, `.ogg`, `.m4a`, `.aac`, `.opus`, `.webm`) e MIME type `audio/*`
-- Se Whisper disponível: transcreve automaticamente com modelo `tiny` (rápido) e inclui transcrição no prompt do LLM
-- Se Whisper indisponível: exibe mensagem sugerindo ativar a skill audio-transcriber
-- Se falhar: exibe erro sem quebrar o fluxo
+### 2. Capabilities Tauri (`src-tauri/capabilities/default.json`)
+- Adicionados `bash` e `sh` como shells permitidos no `shell:allow-execute`
 
-### 5. Skill audio-transcriber atualizada (`src-tauri/resources/skills/audio-transcriber.md`)
-- Frontmatter YAML com `tools`: `transcribe_audio` e `whisper_status`
-- Documentação dos 3 métodos de uso: upload no chat, API direta, CLI
-- Tabela de modelos Whisper e variáveis de ambiente
+### 3. Cargo config (`src-tauri/.cargo/config.toml`)
+- Comentados os linkers Windows (`lld-link.exe`, `mingw32-gcc.exe`) — não bloqueiam build Linux
 
-### 6. Bump v0.1.44 → v0.1.45
-- Cargo.toml, tauri.conf.json, updater.json, package.json, CHECKPOINT.md
+### 4. Updater dev path (`src-tauri/src/commands/updater.rs`)
+- Linha 101: `"D:\\Projeto Fluxcodex\\..."` hardcoded → `cwd.join("updater.json")`
 
-### 7. Build e Release
-- `cargo check` + `tsc --noEmit` sem erros
-- NSIS + MSI gerados com assinatura
-- Release publicado: https://github.com/walacesssantos-TCX/ai-app-builder/releases/tag/v0.1.45
+### 5. Terminal UI (`src/components/terminal/TerminalPanel.tsx`)
+- **isWindows()**: função de detecção via `navigator.userAgent` + `process.platform`
+- **getDefaultCwd()**: `'C:\\'` no Windows, `'/home/developer'` no Linux
+- **getPathSep()**: `'\\'` no Windows, `'/'` no Linux
+- **normalizeCwd()**: suporte a caminhos Unix (`/home/...`) + detecção de drive letter vs root
+- **Banner**: não mostra mais "Microsoft Windows..." no Linux (mostra "Linux ... Terminal Fluxcodex")
+- **Prompt**: `>` no Windows, `$` no Linux
+- **Mock `ls/dir`**: formato Linux (`drwxr-xr-x`) quando isWindows() === false
+- **Mock erro comando**: `'cmd' não é reconhecido` no Windows, `bash: cmd: command not found` no Linux
+- **Título da sessão**: `cmd` no Windows, `bash` no Linux
+- **Default CWD**: 4 ocorrências de `'C:\\'` → `getDefaultCwd()`
 
-## CHECKPOINT.md e SESSION.md
-- CHECKPOINT.md atualizado com seção v0.1.45
-- SESSION.md atualizada (esta sessão)
+### 6. Dev Server Manager (`sidecar/src/services/dev-server-manager.ts`)
+- Linha 65: `spawn('cmd.exe', ['/c', command])` → `isWin ? spawn('cmd.exe', ['/c', command]) : spawn('bash', ['-c', command])`
+
+### 7. Agent Engine (`sidecar/src/services/agent-engine.ts`)
+- **Linha 62:** `set "TOOL_${k}=${v}" &&` → Windows: `set ... &&`, Linux: `TOOL_${k}='${v}' `
+- **Linha 70:** `shell: 'cmd.exe'` → `isWin ? 'cmd.exe' : true`
+
+### 8. Subagent Manager (`sidecar/src/services/subagent-manager.ts`)
+- **Linha 199:** mesmo fix do agent-engine para env vars
+- **Linha 207:** `shell: 'cmd.exe'` → `isWin ? 'cmd.exe' : true`
+
+### 9. Chat routes (`sidecar/src/routes/chat.ts`)
+- **findstr → grep**: `search_files` usa `findstr /s /n /i` no Windows, `grep -r -n -i` no Linux
+- **Descrição**: `"Execute a shell command (PowerShell on Windows)"` → `"Execute a shell command"`
+- **run_command**: `execSync` sem `shell` → adicionado `shell: true` (pipes funcionam em ambos)
+
+### 10. Skill audio-transcriber docs (`src-tauri/resources/skills/audio-transcriber.md`)
+- Exemplo CLI: adicionado comando Linux (`python3 -m whisper`)
+- `WHISPER_PYTHON` default: path Windows hardcoded → `python3` (Linux) / `python` (Windows)
+
+---
+
+## Transcription HTTP 500 Fix — 4 arquivos
+
+### 1. `require()` em ESM (`sidecar/src/routes/transcribe-page.ts`)
+- **Linha 192:** `const stream = require('fs').createReadStream(...)` → **CAUSA RAIZ DO HTTP 500**
+- Sidecar usa `"type": "module"` — `require` não está disponível em módulos ESM
+- Fix: `const { createReadStream } = await import('fs')`
+
+### 2. Whisper service (`sidecar/src/services/whisper.ts`)
+- **PYTHON fallback**: `'python3'` → `process.platform === 'win32' ? 'python' : 'python3'`
+- **execSync shell**: adicionado `shell: true` na verificação `isWhisperAvailable()` (no Linux, sem shell, aspas são literais → ENOENT)
+- **ffmpeg error msg**: `"sudo apt install ffmpeg"` → `"sudo apt install ffmpeg (Linux) ou winget install ffmpeg (Windows) ou brew install ffmpeg (macOS)"`
+
+### 3. FFmpeg service (`sidecar/src/services/ffmpeg.ts`)
+- **ensureFfmpegInPath()**: estava vazia (no-op) → agora loga hint cross-platform de instalação
+
+### 4. Docs (`audio-transcriber.md`)
+- Paths Windows removidos, exemplos cross-platform adicionados
+
+---
+
+## Arquivos modificados (total: 12)
+
+```
+src-tauri/src/commands/terminal.rs
+src-tauri/src/commands/updater.rs
+src-tauri/capabilities/default.json
+src-tauri/.cargo/config.toml
+src-tauri/resources/skills/audio-transcriber.md
+src/components/terminal/TerminalPanel.tsx
+sidecar/src/routes/transcribe-page.ts
+sidecar/src/routes/chat.ts
+sidecar/src/services/whisper.ts
+sidecar/src/services/ffmpeg.ts
+sidecar/src/services/agent-engine.ts
+sidecar/src/services/subagent-manager.ts
+sidecar/src/services/dev-server-manager.ts
+```
 
 ## Pendências / Próximos passos sugeridos
-1. Testar transcrição: enviar um `.wav` ou `.mp3` no chat e verificar se a transcrição aparece no contexto
-2. Ajustar modelo padrão de `medium` para `tiny` no context-builder se necessário (já configurado como tiny no preview automático)
-3. Instalar modelo na primeira execução (whisper baixa automático para `~/.cache/whisper/`)
-4. Considerar suporte a GPU se CUDA estiver disponível no futuro
+1. Testar `npm run dev` + `npm run sidecar:dev` no Linux (verificar terminal, transcrição)
+2. Corrigir assinatura do updater (signature vazia no `updater.json`)
+3. Implementar fallback de provider (ex: Groq 429 → Gemini)
+4. Preservar conteúdo de arquivos anexados no histórico
+5. Carregar mensagens do backend ao trocar de conversa

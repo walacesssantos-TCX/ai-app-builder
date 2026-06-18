@@ -23,6 +23,14 @@ export function getFfmpegPath(): string | null {
 }
 
 export function ensureFfmpegInPath(): void {
+  if (!isFfmpegAvailable()) {
+    const hint = process.platform === 'win32'
+      ? 'winget install ffmpeg'
+      : process.platform === 'darwin'
+        ? 'brew install ffmpeg'
+        : 'sudo apt install ffmpeg || sudo dnf install ffmpeg'
+    process.stderr.write(`[ffmpeg] ffmpeg not found. Install with: ${hint}\n`)
+  }
 }
 
 export function getAudioDurationSeconds(audioPath: string): number | null {

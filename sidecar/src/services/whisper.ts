@@ -5,7 +5,7 @@ import { join } from 'path'
 import { ensureFfmpegInPath, isFfmpegAvailable, getAudioDurationSeconds } from './ffmpeg.js'
 
 
-const PYTHON = process.env.WHISPER_PYTHON || 'python3'
+const PYTHON = process.env.WHISPER_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
 
 const TRANSCRIBE_SCRIPT_SRC = `#!/usr/bin/env python3
 import argparse, json, sys, time
@@ -118,7 +118,7 @@ function expandMode(mode: WhisperMode | undefined, model: string) {
 export async function isWhisperAvailable(): Promise<boolean> {
   if (_whisperAvailable !== null) return _whisperAvailable
   try {
-    execSync(`"${PYTHON}" -c "from faster_whisper import WhisperModel; print('ok')"`, { timeout: 10000, stdio: 'pipe', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } })
+    execSync(`"${PYTHON}" -c "from faster_whisper import WhisperModel; print('ok')"`, { timeout: 10000, stdio: 'pipe', env: { ...process.env, PYTHONIOENCODING: 'utf-8' }, shell: true })
     const ff = isFfmpegAvailable()
     _whisperAvailable = ff
     if (!ff) {
@@ -141,7 +141,7 @@ export async function transcribeBuffer(
 
   if (!isFfmpegAvailable()) {
     throw new Error(
-      'ffmpeg não encontrado. Instale com: sudo apt install ffmpeg'
+      'ffmpeg não encontrado. Instale com: sudo apt install ffmpeg (Linux) ou winget install ffmpeg (Windows) ou brew install ffmpeg (macOS)'
     )
   }
 

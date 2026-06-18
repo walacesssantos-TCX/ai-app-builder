@@ -86,8 +86,16 @@ pub async fn create_terminal(
         state.paths.clone()
     };
 
-    let mut cmd = Command::new("cmd.exe");
-    cmd.args(["/Q"])
+    let mut cmd = if cfg!(target_os = "windows") {
+        let mut c = Command::new("cmd.exe");
+        c.args(["/Q"]);
+        c
+    } else {
+        let mut c = Command::new("bash");
+        c.args(["--norc", "--noprofile"]);
+        c
+    };
+    cmd
         .env("TERM", "xterm-256color")
         .env("FORCE_COLOR", "1")
         .env("CLICOLOR", "1")
