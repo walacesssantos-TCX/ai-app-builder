@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Write;
-#[cfg(windows)]
-use std::io;
 use std::path::PathBuf;
+use std::io::Write;
 use tauri::{AppHandle, Manager};
 
 const GH_OWNER: &str = "walacesssantos-TCX";
@@ -13,13 +11,11 @@ const GH_REPO: &str = "ai-app-builder";
 struct UpdaterManifest {
     version: String,
     notes: Option<String>,
-    pub_date: Option<String>,
     platforms: std::collections::HashMap<String, PlatformEntry>,
 }
 
 #[derive(Deserialize)]
 struct PlatformEntry {
-    signature: Option<String>,
     url: String,
 }
 
@@ -50,141 +46,19 @@ fn parse_version(v: &str) -> Vec<u32> {
         .collect()
 }
 
-fn is_newer(local: &str, current: &str) -> bool {
-    let lv = parse_version(local);
-    let cv = parse_version(current);
-    lv > cv
-}
-
-fn resolve_installer_path(raw: &str) -> String {
-    let without_prefix = raw.trim_start_matches("file:///");
-    let decoded = urlencoding_decode(without_prefix);
-    if cfg!(windows) {
-        decoded.replace('/', "\\")
-    } else {
-        decoded
-    }
+fn is_newer(candidate: &str, current: &str) -> bool {
+    parse_version(candidate) > parse_version(current)
 }
 
 fn strip_bom(s: &str) -> &str {
     s.strip_prefix('\u{feff}').unwrap_or(s)
 }
 
-fn urlencoding_decode(s: &str) -> String {
-    let mut result = String::with_capacity(s.len());
-    let mut chars = s.chars();
-    while let Some(c) = chars.next() {
-        if c == '%' {
-            let hex: String = chars.by_ref().take(2).collect();
-            if hex.len() == 2 {
-                if let Ok(byte) = u8::from_str_radix(&hex, 16) {
-                    result.push(byte as char);
-                    continue;
-                }
-            }
-            // invalid percent sequence — push raw chars
-            result.push('%');
-            result.push_str(&hex);
-            continue;
-        }
-        result.push(c);
+fn log_updater(msg: &str) {
+    let log_path = std::env::temp_dir().join("aibuilder-updater.log");
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_path) {
+        let _ = writeln!(f, "{}", msg);
     }
-    result
-}
-
-fn get_default_updater_paths() -> Vec<String> {
-    let mut paths = Vec::new();
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
-            paths.push(exe_dir.join("updater.json").to_string_lossy().to_string());
-        }
-    }
-    if cfg!(debug_assertions) {
-        if let Ok(cwd) = std::env::current_dir() {
-            paths.push(cwd.join("updater.json").to_string_lossy().to_string());
-        }
-    }
-    paths.push("./updater.json".into());
-    paths
-}
-
-fn get_resource_updater_path(app: &AppHandle) -> Option<String> {
-    let path = app
-        .path()
-        .resolve("updater.json", tauri::path::BaseDirectory::Resource)
-        .ok()?;
-    Some(path.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, String> {
-    let current_version = env!("CARGO_PKG_VERSION");
-
-    // 1. GitHub releases first (primary source)
-    match check_github_release(current_version) {
-        Ok(Some(info)) => return Ok(Some(info)),
-        Ok(None) => log_updater("GitHub returned no newer version"),
-        Err(e) => log_updater(&format!("GitHub check error: {}", e)),
-    }
-
-    // 2. Fallback: local updater.json files (dev/test)
-    let mut paths = get_default_updater_paths();
-    if let Some(resource_path) = get_resource_updater_path(&app) {
-        paths.insert(0, resource_path);
-    }
-
-    for path in paths {
-        if !std::path::Path::new(&path).exists() {
-            continue;
-        }
-
-        let content = match fs::read_to_string(&path) {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-        let content = strip_bom(&content);
-        let manifest: UpdaterManifest = match serde_json::from_str(content) {
-            Ok(m) => m,
-            Err(_) => continue,
-        };
-
-        if !is_newer(&manifest.version, current_version) {
-            continue;
-        }
-
-        let platform_key_option = manifest
-            .platforms
-            .keys()
-            .find(|k| if cfg!(windows) { k.contains("windows") } else { k.contains("linux") });
-
-        let platform_key = match platform_key_option {
-            Some(k) => k,
-            None => continue,
-        };
-
-        let entry = &manifest.platforms[platform_key];
-        let installer_path = if entry.url.starts_with("http://") || entry.url.starts_with("https://") {
-            entry.url.clone()
-        } else {
-            resolve_installer_path(&entry.url)
-        };
-
-        // Validate remote URL before reporting update available to avoid 404 on download
-        if installer_path.starts_with("http://") || installer_path.starts_with("https://") {
-            if !is_url_accessible(&installer_path) {
-                log_updater(&format!("Installer URL not accessible — skipping: {}", installer_path));
-                continue;
-            }
-        }
-
-        return Ok(Some(LocalUpdateInfo {
-            version: manifest.version,
-            notes: manifest.notes.unwrap_or_default(),
-            installer_path,
-        }));
-    }
-
-    Ok(None)
 }
 
 fn is_url_accessible(url: &str) -> bool {
@@ -195,20 +69,10 @@ fn is_url_accessible(url: &str) -> bool {
         .build();
     match client {
         Ok(c) => match c.head(url).send() {
-            Ok(resp) => {
-                let status = resp.status().as_u16();
-                status < 400
-            }
+            Ok(resp) => resp.status().as_u16() < 400,
             Err(_) => false,
         },
         Err(_) => false,
-    }
-}
-
-fn log_updater(msg: &str) {
-    let log_path = std::env::temp_dir().join("aibuilder-updater.log");
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_path) {
-        let _ = writeln!(f, "{}", msg);
     }
 }
 
@@ -232,14 +96,15 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
         log_updater(&msg);
         msg
     })?;
+
     if !resp.status().is_success() {
         log_updater(&format!("GitHub returned HTTP {}", resp.status()));
         return Ok(None);
     }
 
     let release: GithubRelease = resp.json().map_err(|e| format!("JSON parse error: {}", e))?;
-
     let tag_version = release.tag_name.trim_start_matches('v');
+
     if !is_newer(tag_version, current) {
         log_updater(&format!("GitHub latest={} not newer than current={}", tag_version, current));
         return Ok(None);
@@ -247,33 +112,15 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
 
     log_updater(&format!("Update found: v{}", tag_version));
 
-    // Find platform-specific installer asset
-    #[cfg(windows)]
-    let installer_suffix = "-setup.exe";
-    #[cfg(not(windows))]
-    let installer_suffix = "_amd64.deb";
+    // Find Linux .deb asset
+    let installer = release.assets.iter().find(|a| a.name.ends_with("_amd64.deb"))
+        .or_else(|| release.assets.iter().find(|a| a.name.contains(tag_version) && a.name.ends_with(".deb")));
 
-    let installer = release.assets.iter().find(|a| a.name.ends_with(installer_suffix));
     let url = match installer {
         Some(a) => a.browser_download_url.clone(),
         None => {
-            // Try broader match (any .deb or .exe with the tag version)
-            let broader = release.assets.iter().find(|a| {
-                a.name.contains(tag_version) && (a.name.ends_with(".deb") || a.name.ends_with(".exe"))
-            });
-            if let Some(a) = broader {
-                a.browser_download_url.clone()
-            } else {
-                // fallback: construct the URL from tag
-                #[cfg(windows)]
-                let fallback_name = format!("AI.App.Builder.Studio_{}_x64-setup.exe", tag_version);
-                #[cfg(not(windows))]
-                let fallback_name = format!("AI.App.Builder.Studio_{}_amd64.deb", tag_version);
-                format!(
-                    "https://github.com/{}/{}/releases/download/{}/{}",
-                    GH_OWNER, GH_REPO, release.tag_name, fallback_name
-                )
-            }
+            log_updater(&format!("No .deb asset found in release {} — skipping", tag_version));
+            return Ok(None);
         }
     };
 
@@ -284,66 +131,108 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
     }))
 }
 
+fn get_resource_updater_path(app: &AppHandle) -> Option<String> {
+    let path = app
+        .path()
+        .resolve("updater.json", tauri::path::BaseDirectory::Resource)
+        .ok()?;
+    Some(path.to_string_lossy().to_string())
+}
+
+fn get_default_updater_paths() -> Vec<String> {
+    let mut paths = Vec::new();
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            paths.push(exe_dir.join("updater.json").to_string_lossy().to_string());
+        }
+    }
+    if cfg!(debug_assertions) {
+        if let Ok(cwd) = std::env::current_dir() {
+            paths.push(cwd.join("updater.json").to_string_lossy().to_string());
+        }
+    }
+    paths.push("./updater.json".into());
+    paths
+}
+
+#[tauri::command]
+pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, String> {
+    let current_version = env!("CARGO_PKG_VERSION");
+
+    // 1. GitHub releases (primary)
+    match check_github_release(current_version) {
+        Ok(Some(info)) => return Ok(Some(info)),
+        Ok(None) => log_updater("GitHub returned no newer version"),
+        Err(e) => log_updater(&format!("GitHub check error: {}", e)),
+    }
+
+    // 2. Fallback: bundled updater.json
+    let mut paths = get_default_updater_paths();
+    if let Some(resource_path) = get_resource_updater_path(&app) {
+        paths.insert(0, resource_path);
+    }
+
+    for path in paths {
+        if !std::path::Path::new(&path).exists() {
+            continue;
+        }
+        let content = match fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let manifest: UpdaterManifest = match serde_json::from_str(strip_bom(&content)) {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+        if !is_newer(&manifest.version, current_version) {
+            continue;
+        }
+        let entry = match manifest.platforms.get("linux-x86_64") {
+            Some(e) => e,
+            None => continue,
+        };
+        if !is_url_accessible(&entry.url) {
+            log_updater(&format!("Installer URL not accessible — skipping: {}", entry.url));
+            continue;
+        }
+        return Ok(Some(LocalUpdateInfo {
+            version: manifest.version,
+            notes: manifest.notes.unwrap_or_default(),
+            installer_path: entry.url.clone(),
+        }));
+    }
+
+    Ok(None)
+}
+
 #[tauri::command]
 pub fn install_update(path: String) -> Result<String, String> {
     let installer_path = if path.starts_with("http://") || path.starts_with("https://") {
         let temp_dir = std::env::temp_dir().join("ai-app-builder-update");
-        fs::create_dir_all(&temp_dir).map_err(|e| format!("Falha ao criar diretório temporário: {}", e))?;
+        fs::create_dir_all(&temp_dir)
+            .map_err(|e| format!("Falha ao criar diretório temporário: {}", e))?;
 
-        let filename = path.rsplit('/').next().unwrap_or(
-            if cfg!(windows) { "installer.exe" } else { "installer.deb" }
-        );
+        let filename = path.rsplit('/').next().unwrap_or("installer.deb");
         let dest = temp_dir.join(filename);
 
-        #[cfg(not(windows))]
-        {
-            // Use system curl on Linux — reqwest/rustls has redirect issues with GitHub CDN
-            let status = std::process::Command::new("curl")
-                .args([
-                    "-sL",
-                    "--fail",
-                    "--max-time", "300",
-                    "-o", &dest.to_string_lossy().to_string(),
-                    &path,
-                ])
-                .status()
-                .map_err(|e| format!("curl não encontrado: {}", e))?;
+        let status = std::process::Command::new("curl")
+            .args([
+                "-sL",
+                "--fail",
+                "--max-time", "300",
+                "-o", &dest.to_string_lossy().to_string(),
+                &path,
+            ])
+            .status()
+            .map_err(|e| format!("curl não encontrado: {}", e))?;
 
-            if !status.success() {
-                return Err(format!("Falha ao baixar atualização (curl falhou)"));
-            }
-        }
-
-        #[cfg(windows)]
-        {
-            let client = reqwest::blocking::Client::builder()
-                .user_agent("ai-app-builder-updater")
-                .no_gzip()
-                .timeout(std::time::Duration::from_secs(300))
-                .build()
-                .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
-
-            let mut resp = client
-                .get(&path)
-                .send()
-                .map_err(|e| format!("Falha ao baixar atualização: {}", e))?;
-
-            if !resp.status().is_success() {
-                return Err(format!(
-                    "Falha ao baixar atualização: servidor retornou HTTP {}",
-                    resp.status()
-                ));
-            }
-
-            let mut dest_file = std::fs::File::create(&dest)
-                .map_err(|e| format!("Falha ao criar arquivo temporário: {}", e))?;
-            io::copy(&mut resp, &mut dest_file)
-                .map_err(|e| format!("Falha ao baixar: {}", e))?;
+        if !status.success() {
+            return Err("Falha ao baixar atualização (curl falhou — verifique a conexão)".to_string());
         }
 
         dest.to_string_lossy().to_string()
     } else {
-        resolve_installer_path(&path)
+        path.clone()
     };
 
     let p = PathBuf::from(&installer_path);
@@ -361,66 +250,42 @@ pub fn run_installer(path: String) -> Result<(), String> {
         return Err(format!("Instalador não encontrado: {}", path));
     }
 
-    #[cfg(windows)]
-    {
-        // Kill only the sidecar (node.exe) so Prisma engine DLL is unlocked
-        let _ = std::process::Command::new("taskkill")
-            .args(["/f", "/t", "/im", "node.exe"])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn();
+    // Kill sidecar before install to unlock files
+    let _ = std::process::Command::new("pkill")
+        .args(["-f", "node.*sidecar"])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    let _ = std::process::Command::new("pkill")
+        .args(["-f", "tsx.*index.ts"])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
 
-        std::thread::sleep(std::time::Duration::from_secs(3));
+    std::thread::sleep(std::time::Duration::from_secs(2));
 
-        // Spawn installer detached with /RUN so it auto-launches after install
-        std::process::Command::new(&path)
-            .args(["/S", "/RUN"])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
-    }
+    // Try apt-get install first (resolves deps), fall back to dpkg -i
+    let apt_result = std::process::Command::new("pkexec")
+        .args(["apt-get", "install", "-y", &path])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status();
 
-    #[cfg(not(windows))]
-    {
-        // Kill sidecar before install to unlock files
-        let _ = std::process::Command::new("pkill")
-            .args(["-f", "node.*sidecar"])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn();
-        let _ = std::process::Command::new("pkill")
-            .args(["-f", "tsx.*index.ts"])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn();
-
-        std::thread::sleep(std::time::Duration::from_secs(2));
-
-        // Try pkexec apt install (resolves deps); fall back to pkexec dpkg -i
-        let apt_result = std::process::Command::new("pkexec")
-            .args(["apt-get", "install", "-y", &path])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status();
-
-        let success = match apt_result {
-            Ok(s) if s.success() => true,
-            _ => {
-                // apt not available or failed — try dpkg directly
-                let s = std::process::Command::new("pkexec")
-                    .args(["dpkg", "-i", &path])
-                    .stdout(std::process::Stdio::null())
-                    .stderr(std::process::Stdio::null())
-                    .status()
-                    .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
-                s.success()
-            }
-        };
-
-        if !success {
-            return Err("Instalação falhou. Tente instalar manualmente: sudo dpkg -i <arquivo>.deb".to_string());
+    let success = match apt_result {
+        Ok(s) if s.success() => true,
+        _ => {
+            let s = std::process::Command::new("pkexec")
+                .args(["dpkg", "-i", &path])
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .status()
+                .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
+            s.success()
         }
+    };
+
+    if !success {
+        return Err("Instalação falhou. Tente manualmente: sudo dpkg -i <arquivo>.deb".to_string());
     }
 
     Ok(())

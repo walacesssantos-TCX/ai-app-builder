@@ -1,7 +1,7 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.58** — última atualização: `2026-06-18T17:00:00Z`
+**v0.1.61** — última atualização: `2026-06-18` (Linux-only, updater 404 fix)
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
@@ -14,7 +14,7 @@
 - App 100% API-based (Groq, Anthropic, OpenAI, Gemini, DeepSeek, Mistral, Cohere, OpenRouter)
 - Sidecar com log para `$TMPDIR/aibuilder-sidecar.log` (Linux) ou `%TEMP%\aibuilder-sidecar.log` (Windows)
 - Updater com log para `$TMPDIR/aibuilder-updater.log` (Linux) ou `%TEMP%\aibuilder-updater.log` (Windows)
-- **Cross-platform**: shell/bash no Linux, cmd.exe no Windows
+- **Plataforma**: Linux-only (bundle `deb`, sem suporte Windows)
 
 ## O que foi implementado até v0.1.12
 
@@ -218,7 +218,7 @@ theme/   → useTheme
 | v0.1.51 | NSIS + MSI | Buildado (whisper: default tiny + auto-seleção + error diagnostics) |
 | v0.1.56 | .deb + NSIS | Buildado (Linux compatibility — sidecar, ffmpeg, Whisper CPU, updater) |
 | v0.1.57 | .deb + NSIS | Buildado (Linux CI/CD release, permissions fix, updater Linux) |
-| v0.1.58 | .deb + NSIS | **Atual** (Linux full adaptation, transcription 500 fix, updater URL fix) |
+| v0.1.58 | .deb | **Atual** (Linux full adaptation, transcription 500 fix, updater URL fix, TS shell compat) |
 
 ### v0.1.45 — Whisper integrado + transcrição automática de áudio
 
@@ -317,6 +317,28 @@ theme/   → useTheme
 | .gitignore | Ignora `sidecar/whisper-env/` |
 | Linux schema | `linux-schema.json` gerado para build Linux |
 | Bump versão | All 4 files → v0.1.57 |
+
+### v0.1.58 — Linux full adaptation + updater fix + release
+
+| O quê | Detalhes |
+|-------|----------|
+| Shell cross-platform | `terminal.rs` — detecta `cfg!(target_os)` para usar `bash` no Linux, `cmd.exe` no Windows |
+| Capabilities Tauri | `default.json` — adiciona `bash` e `sh` como shells permitidos |
+| Cargo config | `.cargo/config.toml` — comentados linkers Windows |
+| Updater dev path | `updater.rs` — `D:\` hardcoded → `cwd.join("updater.json")` |
+| Terminal UI cross-platform | `TerminalPanel.tsx` — normalizeCwd com `/`; prompt `$`/`>`; banner sem Windows; mock ls Linux |
+| Sidecar shells | `dev-server-manager.ts`, `agent-engine.ts`, `subagent-manager.ts` — `'cmd.exe'` → `'/bin/sh'` no Linux |
+| Env vars cross-platform | `agent-engine.ts`, `subagent-manager.ts` — `set "TOOL_X=y"` → `export TOOL_X=y` no Linux |
+| findstr → grep | `chat.ts` — `findstr` no Windows, `grep -r` no Linux |
+| Python fallback | `whisper.ts` — `python3` no Linux, `python` no Windows |
+| execSync shell compat | 4 arquivos — `shell: true` → `shell: '/bin/sh'` (type compat `@types/node`) |
+| ffmpeg error msg | `whisper.ts` — mensagem cross-platform (winget/brew/apt/dnf) |
+| ensureFfmpegInPath | `ffmpeg.ts` — implementada com hint cross-platform |
+| require() em ESM | `transcribe-page.ts` — `require('fs')` → `await import('fs')` (**HTTP 500 fix**) |
+| Updater Linux fallback | `updater.rs` — `"AI App Builder Studio"` (espaços) → `"AI.App.Builder.Studio"` (pontos) |
+| Updater asset search | `updater.rs` — busca ampla (qualquer `.deb`/`.exe` com a versão) antes do fallback |
+| updater.json | Version → `0.1.59`, URLs corrigidas com pontos |
+| Release v0.1.58 | `.deb` publicado no GitHub, updater aponta para v0.1.59 |
 
 ### v0.1.58 — Linux full adaptation + transcription HTTP 500 fix
 

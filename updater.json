@@ -1,15 +1,11 @@
 {
-  "version": "0.1.61",
-  "notes": "v0.1.61: Próxima versão — correções e melhorias",
-  "pub_date": "2026-06-25T17:00:00Z",
+  "version": "0.1.62",
+  "notes": "v0.1.62: Próxima versão — correções e melhorias",
+  "pub_date": "2026-07-01T17:00:00Z",
   "platforms": {
     "linux-x86_64": {
       "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.61/AI.App.Builder.Studio_0.1.61_amd64.deb"
-    },
-    "windows-x86_64": {
-      "signature": "",
-      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.61/AI.App.Builder.Studio_0.1.61_x64-setup.exe"
+      "url": "https://github.com/walacesssantos-TCX/ai-app-builder/releases/download/v0.1.62/AI.App.Builder.Studio_0.1.62_amd64.deb"
     }
   }
 }
