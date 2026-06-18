@@ -9,6 +9,7 @@ type UpdateState =
   | { status: 'downloading' }
   | { status: 'downloaded'; path: string }
   | { status: 'installing' }
+  | { status: 'installed' }
   | { status: 'uptodate' }
   | { status: 'error'; message: string }
 
@@ -61,8 +62,7 @@ export function UpdateSection() {
     setState({ status: 'installing' })
     try {
       await invoke('run_installer', { path: state.path })
-      // Installer was spawned with /S /RUN — it will auto-close the app
-      // and launch the new version. No need to call relaunch().
+      setState({ status: 'installed' })
     } catch (e) {
       setState({ status: 'error', message: String(e) })
     }
@@ -150,7 +150,19 @@ export function UpdateSection() {
         {state.status === 'installing' && (
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <RotateCcw className="w-3.5 h-3.5 animate-spin" />
-            Instalando e reiniciando...
+            Instalando...
+          </div>
+        )}
+
+        {state.status === 'installed' && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400" />
+              <span className="text-xs font-medium text-zinc-100">Instalação concluída!</span>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Feche e reabra o aplicativo para usar a nova versão.
+            </p>
           </div>
         )}
 

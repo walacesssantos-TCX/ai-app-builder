@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::{self, Write};
+use std::io::Write;
+#[cfg(windows)]
+use std::io;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
@@ -284,27 +286,7 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
 
 #[tauri::command]
 pub fn install_update(path: String) -> Result<String, String> {
-    // Download from URL if needed, return local path
     let installer_path = if path.starts_with("http://") || path.starts_with("https://") {
-        let client = reqwest::blocking::Client::builder()
-            .user_agent("ai-app-builder-updater")
-            .no_gzip()
-            .timeout(std::time::Duration::from_secs(300))
-            .build()
-            .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
-
-        let mut resp = client
-            .get(&path)
-            .send()
-            .map_err(|e| format!("Falha ao baixar atualização: {}", e))?;
-
-        if !resp.status().is_success() {
-            return Err(format!(
-                "Falha ao baixar atualização: servidor retornou HTTP {}",
-                resp.status()
-            ));
-        }
-
         let temp_dir = std::env::temp_dir().join("ai-app-builder-update");
         fs::create_dir_all(&temp_dir).map_err(|e| format!("Falha ao criar diretório temporário: {}", e))?;
 
@@ -313,11 +295,51 @@ pub fn install_update(path: String) -> Result<String, String> {
         );
         let dest = temp_dir.join(filename);
 
-        // Stream the response to disk instead of loading into memory
-        let mut dest_file = std::fs::File::create(&dest)
-            .map_err(|e| format!("Falha ao criar arquivo temporário: {}", e))?;
-        io::copy(&mut resp, &mut dest_file)
-            .map_err(|e| format!("Falha ao baixar: {}", e))?;
+        #[cfg(not(windows))]
+        {
+            // Use system curl on Linux — reqwest/rustls has redirect issues with GitHub CDN
+            let status = std::process::Command::new("curl")
+                .args([
+                    "-sL",
+                    "--fail",
+                    "--max-time", "300",
+                    "-o", &dest.to_string_lossy().to_string(),
+                    &path,
+                ])
+                .status()
+                .map_err(|e| format!("curl não encontrado: {}", e))?;
+
+            if !status.success() {
+                return Err(format!("Falha ao baixar atualização (curl falhou)"));
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            let client = reqwest::blocking::Client::builder()
+                .user_agent("ai-app-builder-updater")
+                .no_gzip()
+                .timeout(std::time::Duration::from_secs(300))
+                .build()
+                .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
+
+            let mut resp = client
+                .get(&path)
+                .send()
+                .map_err(|e| format!("Falha ao baixar atualização: {}", e))?;
+
+            if !resp.status().is_success() {
+                return Err(format!(
+                    "Falha ao baixar atualização: servidor retornou HTTP {}",
+                    resp.status()
+                ));
+            }
+
+            let mut dest_file = std::fs::File::create(&dest)
+                .map_err(|e| format!("Falha ao criar arquivo temporário: {}", e))?;
+            io::copy(&mut resp, &mut dest_file)
+                .map_err(|e| format!("Falha ao baixar: {}", e))?;
+        }
 
         dest.to_string_lossy().to_string()
     } else {
@@ -361,7 +383,7 @@ pub fn run_installer(path: String) -> Result<(), String> {
 
     #[cfg(not(windows))]
     {
-        // Kill sidecar process
+        // Kill sidecar before install to unlock files
         let _ = std::process::Command::new("pkill")
             .args(["-f", "node.*sidecar"])
             .stdout(std::process::Stdio::null())
@@ -375,16 +397,29 @@ pub fn run_installer(path: String) -> Result<(), String> {
 
         std::thread::sleep(std::time::Duration::from_secs(2));
 
-        // Install .deb with pkexec (graphical sudo prompt)
-        let status = std::process::Command::new("pkexec")
-            .args(["dpkg", "-i", &path])
-            .stdout(std::process::Stdio::inherit())
-            .stderr(std::process::Stdio::inherit())
-            .status()
-            .map_err(|e| format!("Falha ao executar dpkg: {}", e))?;
+        // Try pkexec apt install (resolves deps); fall back to pkexec dpkg -i
+        let apt_result = std::process::Command::new("pkexec")
+            .args(["apt-get", "install", "-y", &path])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status();
 
-        if !status.success() {
-            return Err(format!("Instalação falhou com status: {}", status));
+        let success = match apt_result {
+            Ok(s) if s.success() => true,
+            _ => {
+                // apt not available or failed — try dpkg directly
+                let s = std::process::Command::new("pkexec")
+                    .args(["dpkg", "-i", &path])
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .status()
+                    .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
+                s.success()
+            }
+        };
+
+        if !success {
+            return Err("Instalação falhou. Tente instalar manualmente: sudo dpkg -i <arquivo>.deb".to_string());
         }
     }
 
