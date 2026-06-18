@@ -49,3 +49,4 @@ pnpm-debug.log*
 # Tauri signing keys
 src-tauri/.tauri/
 .tauri/
+whisper-env/

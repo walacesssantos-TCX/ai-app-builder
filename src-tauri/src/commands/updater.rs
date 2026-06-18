@@ -57,7 +57,11 @@ fn is_newer(local: &str, current: &str) -> bool {
 fn resolve_installer_path(raw: &str) -> String {
     let without_prefix = raw.trim_start_matches("file:///");
     let decoded = urlencoding_decode(without_prefix);
-    decoded.replace('/', "\\")
+    if cfg!(windows) {
+        decoded.replace('/', "\\")
+    } else {
+        decoded
+    }
 }
 
 fn strip_bom(s: &str) -> &str {
@@ -144,17 +148,17 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
             continue;
         }
 
-        let win_key_option = manifest
+        let platform_key_option = manifest
             .platforms
             .keys()
-            .find(|k| k.contains("windows"));
+            .find(|k| if cfg!(windows) { k.contains("windows") } else { k.contains("linux") });
 
-        let win_key = match win_key_option {
+        let platform_key = match platform_key_option {
             Some(k) => k,
             None => continue,
         };
 
-        let entry = &manifest.platforms[win_key];
+        let entry = &manifest.platforms[platform_key];
         let installer_path = if entry.url.starts_with("http://") || entry.url.starts_with("https://") {
             entry.url.clone()
         } else {
@@ -213,15 +217,24 @@ fn check_github_release(current: &str) -> Result<Option<LocalUpdateInfo>, String
 
     log_updater(&format!("Update found: v{}", tag_version));
 
-    // Find the NSIS installer asset
-    let installer = release.assets.iter().find(|a| a.name.ends_with("-setup.exe"));
+    // Find platform-specific installer asset
+    #[cfg(windows)]
+    let installer_suffix = "-setup.exe";
+    #[cfg(not(windows))]
+    let installer_suffix = "_amd64.deb";
+
+    let installer = release.assets.iter().find(|a| a.name.ends_with(installer_suffix));
     let url = match installer {
         Some(a) => a.browser_download_url.clone(),
         None => {
             // fallback: construct the URL from tag
+            #[cfg(windows)]
+            let fallback_name = format!("AI.App.Builder.Studio_{}_x64-setup.exe", tag_version);
+            #[cfg(not(windows))]
+            let fallback_name = format!("AI App Builder Studio_{}_amd64.deb", tag_version);
             format!(
-                "https://github.com/{}/{}/releases/download/{}/AI.App.Builder.Studio_{}_x64-setup.exe",
-                GH_OWNER, GH_REPO, release.tag_name, tag_version
+                "https://github.com/{}/{}/releases/download/{}/{}",
+                GH_OWNER, GH_REPO, release.tag_name, fallback_name
             )
         }
     };
@@ -259,7 +272,9 @@ pub fn install_update(path: String) -> Result<String, String> {
         let temp_dir = std::env::temp_dir().join("ai-app-builder-update");
         fs::create_dir_all(&temp_dir).map_err(|e| format!("Falha ao criar diretório temporário: {}", e))?;
 
-        let filename = path.rsplit('/').next().unwrap_or("installer.exe");
+        let filename = path.rsplit('/').next().unwrap_or(
+            if cfg!(windows) { "installer.exe" } else { "installer.deb" }
+        );
         let dest = temp_dir.join(filename);
 
         // Stream the response to disk instead of loading into memory
@@ -288,22 +303,54 @@ pub fn run_installer(path: String) -> Result<(), String> {
         return Err(format!("Instalador não encontrado: {}", path));
     }
 
-    // Kill only the sidecar (node.exe) so Prisma engine DLL is unlocked
-    let _ = std::process::Command::new("taskkill")
-        .args(["/f", "/t", "/im", "node.exe"])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn();
+    #[cfg(windows)]
+    {
+        // Kill only the sidecar (node.exe) so Prisma engine DLL is unlocked
+        let _ = std::process::Command::new("taskkill")
+            .args(["/f", "/t", "/im", "node.exe"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn();
 
-    std::thread::sleep(std::time::Duration::from_secs(3));
+        std::thread::sleep(std::time::Duration::from_secs(3));
 
-    // Spawn installer detached with /RUN so it auto-launches after install
-    std::process::Command::new(&path)
-        .args(["/S", "/RUN"])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
+        // Spawn installer detached with /RUN so it auto-launches after install
+        std::process::Command::new(&path)
+            .args(["/S", "/RUN"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .map_err(|e| format!("Falha ao executar instalador: {}", e))?;
+    }
+
+    #[cfg(not(windows))]
+    {
+        // Kill sidecar process
+        let _ = std::process::Command::new("pkill")
+            .args(["-f", "node.*sidecar"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn();
+        let _ = std::process::Command::new("pkill")
+            .args(["-f", "tsx.*index.ts"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn();
+
+        std::thread::sleep(std::time::Duration::from_secs(2));
+
+        // Install .deb with pkexec (graphical sudo prompt)
+        let status = std::process::Command::new("pkexec")
+            .args(["dpkg", "-i", &path])
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit())
+            .status()
+            .map_err(|e| format!("Falha ao executar dpkg: {}", e))?;
+
+        if !status.success() {
+            return Err(format!("Instalação falhou com status: {}", status));
+        }
+    }
 
     Ok(())
 }

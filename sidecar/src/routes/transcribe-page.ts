@@ -1,13 +1,10 @@
 import { FastifyInstance } from 'fastify'
 import path from 'path'
 import fs from 'fs/promises'
-import { fileURLToPath } from 'url'
+import { tmpdir } from 'os'
 import { randomUUID } from 'crypto'
 import { transcribeBase64 } from '../services/whisper.js'
 import { generateDocx } from '../services/docx.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 interface TranscriptionJob {
   jobId: string
@@ -23,7 +20,7 @@ interface TranscriptionJob {
 
 const jobs = new Map<string, TranscriptionJob>()
 
-const JOBS_DIR = path.resolve(__dirname, '..', 'tmp', 'transcribe-jobs')
+const JOBS_DIR = path.join(tmpdir(), 'aibuilder-transcribe-jobs')
 
 async function ensureJobsDir() {
   await fs.mkdir(JOBS_DIR, { recursive: true })
