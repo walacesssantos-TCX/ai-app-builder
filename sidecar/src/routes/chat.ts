@@ -101,7 +101,7 @@ function createTools(projectPath?: string): AgentTool[] {
             cwd: projectPath || undefined,
             shell: true,
           })
-          return output.slice(0, 5000)
+          return String(output).slice(0, 5000)
         } catch (e: unknown) {
           const err = e as { stdout?: string; stderr?: string; message?: string }
           return (err.stdout || err.stderr || err.message || 'Command failed').slice(0, 5000)
@@ -136,7 +136,7 @@ function createTools(projectPath?: string): AgentTool[] {
             ? `findstr /s /n /i "${pattern}" "${searchPath}\\*"`
             : `grep -r -n -i "${pattern}" "${searchPath}"`
           const output = execSync(cmd, { encoding: 'utf-8', timeout: 15000, shell: true })
-          return output.slice(0, 5000)
+          return String(output).slice(0, 5000)
         } catch {
           return 'No matches found or search error'
         }

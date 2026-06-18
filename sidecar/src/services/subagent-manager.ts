@@ -210,7 +210,7 @@ export class SubagentManager {
             cwd,
             shell: isWin ? 'cmd.exe' : true,
           })
-          return output.slice(0, 5000)
+          return String(output).slice(0, 5000)
         } catch (e: unknown) {
           const err = e as { stdout?: string; stderr?: string; message?: string }
           return (err.stdout || err.stderr || err.message || 'Tool failed').slice(0, 5000)
