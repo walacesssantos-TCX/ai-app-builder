@@ -118,7 +118,7 @@ function expandMode(mode: WhisperMode | undefined, model: string) {
 export async function isWhisperAvailable(): Promise<boolean> {
   if (_whisperAvailable !== null) return _whisperAvailable
   try {
-    execSync(`"${PYTHON}" -c "from faster_whisper import WhisperModel; print('ok')"`, { timeout: 10000, stdio: 'pipe', env: { ...process.env, PYTHONIOENCODING: 'utf-8' }, shell: true })
+    execSync(`"${PYTHON}" -c "from faster_whisper import WhisperModel; print('ok')"`, { timeout: 10000, stdio: 'pipe', env: { ...process.env, PYTHONIOENCODING: 'utf-8' }, shell: '/bin/sh' })
     const ff = isFfmpegAvailable()
     _whisperAvailable = ff
     if (!ff) {

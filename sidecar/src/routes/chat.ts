@@ -99,7 +99,7 @@ function createTools(projectPath?: string): AgentTool[] {
             encoding: 'utf-8',
             timeout: 30000,
             cwd: projectPath || undefined,
-            shell: true,
+            shell: '/bin/sh',
           })
           return String(output).slice(0, 5000)
         } catch (e: unknown) {
@@ -135,7 +135,7 @@ function createTools(projectPath?: string): AgentTool[] {
           const cmd = isWin
             ? `findstr /s /n /i "${pattern}" "${searchPath}\\*"`
             : `grep -r -n -i "${pattern}" "${searchPath}"`
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 15000, shell: true })
+          const output = execSync(cmd, { encoding: 'utf-8', timeout: 15000, shell: '/bin/sh' })
           return String(output).slice(0, 5000)
         } catch {
           return 'No matches found or search error'

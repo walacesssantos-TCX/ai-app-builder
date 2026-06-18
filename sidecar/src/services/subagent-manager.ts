@@ -208,7 +208,7 @@ export class SubagentManager {
             encoding: 'utf-8',
             timeout: 30000,
             cwd,
-            shell: isWin ? 'cmd.exe' : true,
+            shell: isWin ? 'cmd.exe' : '/bin/sh',
           })
           return String(output).slice(0, 5000)
         } catch (e: unknown) {
