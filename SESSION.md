@@ -2,101 +2,82 @@
 
 ## O que foi implementado
 
-### Linux Full Adaptation + Transcription HTTP 500 Fix
+### 1. Updater 404 fix + Linux-only
 
-**Motivação:** Tornar o projeto totalmente funcional em Linux (o terminal e sidecar tinham dezenas de hardcoded Windows paths/shells) e corrigir o erro HTTP 500 na página de transcrição causado por `require()` em módulo ESM.
+**Causa raiz do 404:**
+- `check_github_release` não validava se o asset existia para a plataforma atual
+- No Windows: release v0.1.59 só tinha `.deb` → código construía URL `.exe` falsa → 404 no download
+- Fix: quando nenhum asset `.deb`/`.exe` encontrado para a plataforma, retorna `None` em vez de URL inventada
 
----
+**Linux-only (decisão de projeto):**
+- `updater.rs` reescrito sem `#[cfg(windows)]` — só Linux (`curl` + `pkexec dpkg/apt`)
+- `tauri.conf.json`: `targets: ["deb"]` (antes `"all"`)
+- `updater.json`: removido `windows-x86_64`
+- Nova chave de assinatura gerada (`~/.tauri/ai-updater.key`) e secret configurado no GitHub
 
-## Linux Adaptation — 12 arquivos modificados
+**Bump v0.1.60 → v0.1.61:**
+- `package.json`, `Cargo.toml`, `tauri.conf.json`
+- CI/CD publicou `AI.App.Builder.Studio_0.1.61_amd64.deb` (103MB) no GitHub
 
-### 1. Terminal Tauri (`src-tauri/src/commands/terminal.rs`)
-- **Linha 89:** `Command::new("cmd.exe")` → `cfg!(target_os)` condicional: `bash` no Linux, `cmd.exe` no Windows
+### 2. Whisper — fixes e otimização para música
 
-### 2. Capabilities Tauri (`src-tauri/capabilities/default.json`)
-- Adicionados `bash` e `sh` como shells permitidos no `shell:allow-execute`
+**Bug crítico: `batch_size` inválido**
+- `model.transcribe()` do faster-whisper não aceita `batch_size`
+- Causava `TypeError` silencioso → exit 1 sem mensagem útil
+- Fix: removido do script Python e dos args TypeScript
 
-### 3. Cargo config (`src-tauri/.cargo/config.toml`)
-- Comentados os linkers Windows (`lld-link.exe`, `mingw32-gcc.exe`) — não bloqueiam build Linux
-
-### 4. Updater dev path (`src-tauri/src/commands/updater.rs`)
-- Linha 101: `"D:\\Projeto Fluxcodex\\..."` hardcoded → `cwd.join("updater.json")`
-
-### 5. Terminal UI (`src/components/terminal/TerminalPanel.tsx`)
-- **isWindows()**: função de detecção via `navigator.userAgent` + `process.platform`
-- **getDefaultCwd()**: `'C:\\'` no Windows, `'/home/developer'` no Linux
-- **getPathSep()**: `'\\'` no Windows, `'/'` no Linux
-- **normalizeCwd()**: suporte a caminhos Unix (`/home/...`) + detecção de drive letter vs root
-- **Banner**: não mostra mais "Microsoft Windows..." no Linux (mostra "Linux ... Terminal Fluxcodex")
-- **Prompt**: `>` no Windows, `$` no Linux
-- **Mock `ls/dir`**: formato Linux (`drwxr-xr-x`) quando isWindows() === false
-- **Mock erro comando**: `'cmd' não é reconhecido` no Windows, `bash: cmd: command not found` no Linux
-- **Título da sessão**: `cmd` no Windows, `bash` no Linux
-- **Default CWD**: 4 ocorrências de `'C:\\'` → `getDefaultCwd()`
-
-### 6. Dev Server Manager (`sidecar/src/services/dev-server-manager.ts`)
-- Linha 65: `spawn('cmd.exe', ['/c', command])` → `isWin ? spawn('cmd.exe', ['/c', command]) : spawn('bash', ['-c', command])`
-
-### 7. Agent Engine (`sidecar/src/services/agent-engine.ts`)
-- **Linha 62:** `set "TOOL_${k}=${v}" &&` → Windows: `set ... &&`, Linux: `TOOL_${k}='${v}' `
-- **Linha 70:** `shell: 'cmd.exe'` → `isWin ? 'cmd.exe' : true`
-
-### 8. Subagent Manager (`sidecar/src/services/subagent-manager.ts`)
-- **Linha 199:** mesmo fix do agent-engine para env vars
-- **Linha 207:** `shell: 'cmd.exe'` → `isWin ? 'cmd.exe' : true`
-
-### 9. Chat routes (`sidecar/src/routes/chat.ts`)
-- **findstr → grep**: `search_files` usa `findstr /s /n /i` no Windows, `grep -r -n -i` no Linux
-- **Descrição**: `"Execute a shell command (PowerShell on Windows)"` → `"Execute a shell command"`
-- **run_command**: `execSync` sem `shell` → adicionado `shell: true` (pipes funcionam em ambos)
-
-### 10. Skill audio-transcriber docs (`src-tauri/resources/skills/audio-transcriber.md`)
-- Exemplo CLI: adicionado comando Linux (`python3 -m whisper`)
-- `WHISPER_PYTHON` default: path Windows hardcoded → `python3` (Linux) / `python` (Windows)
-
----
-
-## Transcription HTTP 500 Fix — 4 arquivos
-
-### 1. `require()` em ESM (`sidecar/src/routes/transcribe-page.ts`)
-- **Linha 192:** `const stream = require('fs').createReadStream(...)` → **CAUSA RAIZ DO HTTP 500**
-- Sidecar usa `"type": "module"` — `require` não está disponível em módulos ESM
-- Fix: `const { createReadStream } = await import('fs')`
-
-### 2. Whisper service (`sidecar/src/services/whisper.ts`)
-- **PYTHON fallback**: `'python3'` → `process.platform === 'win32' ? 'python' : 'python3'`
-- **execSync shell**: adicionado `shell: true` na verificação `isWhisperAvailable()` (no Linux, sem shell, aspas são literais → ENOENT)
-- **ffmpeg error msg**: `"sudo apt install ffmpeg"` → `"sudo apt install ffmpeg (Linux) ou winget install ffmpeg (Windows) ou brew install ffmpeg (macOS)"`
-
-### 3. FFmpeg service (`sidecar/src/services/ffmpeg.ts`)
-- **ensureFfmpegInPath()**: estava vazia (no-op) → agora loga hint cross-platform de instalação
-
-### 4. Docs (`audio-transcriber.md`)
-- Paths Windows removidos, exemplos cross-platform adicionados
-
----
-
-## Arquivos modificados (total: 12)
-
-```
-src-tauri/src/commands/terminal.rs
-src-tauri/src/commands/updater.rs
-src-tauri/capabilities/default.json
-src-tauri/.cargo/config.toml
-src-tauri/resources/skills/audio-transcriber.md
-src/components/terminal/TerminalPanel.tsx
-sidecar/src/routes/transcribe-page.ts
-sidecar/src/routes/chat.ts
-sidecar/src/services/whisper.ts
-sidecar/src/services/ffmpeg.ts
-sidecar/src/services/agent-engine.ts
-sidecar/src/services/subagent-manager.ts
-sidecar/src/services/dev-server-manager.ts
+**Instalação do faster-whisper:**
+```bash
+pip3 install faster-whisper --break-system-packages
+# faster-whisper-1.2.1 instalado com sucesso
 ```
 
-## Pendências / Próximos passos sugeridos
-1. Testar `npm run dev` + `npm run sidecar:dev` no Linux (verificar terminal, transcrição)
-2. Corrigir assinatura do updater (signature vazia no `updater.json`)
-3. Implementar fallback de provider (ex: Groq 429 → Gemini)
+**Pré-processamento de áudio para música:**
+- ffmpeg converte para mono 16kHz + highpass=80Hz + lowpass=8kHz + dynaudnorm
+- Isola frequências vocais antes de passar ao Whisper
+- `preprocessAudioForTranscription()` com fallback para original se ffmpeg falhar
+
+**Parâmetros otimizados para música:**
+| Parâmetro | Antes | Depois | Motivo |
+|-----------|-------|--------|--------|
+| `language` | auto-detect | `'pt'` padrão | Evita alucinações em inglês |
+| `condition_on_previous_text` | `True` | `False` | Evita loops de alucinação |
+| `vad_filter` | — | `False` | Não corta partes da letra |
+| `batch_size` | passado (inválido) | removido | Não existe nesse método |
+
+**Seleção de modelo por duração (corrigida):**
+| Duração | Modelo | Qualidade |
+|---------|--------|-----------|
+| ≤ 3 min | `medium` | Alta |
+| 3–10 min | `base` | Média |
+| > 10 min | `tiny` | Rápida |
+
+**Erro mais detalhado:**
+- Antes: "Whisper falhou... Log: (vazio)"
+- Depois: mostra erro JSON do stdout Python + stderr completo
+
+### 3. Arquivos modificados
+
+```
+src-tauri/src/commands/updater.rs    ← reescrito Linux-only
+src-tauri/tauri.conf.json            ← targets deb, pubkey nova, bump
+src-tauri/Cargo.toml                 ← bump 0.1.61
+package.json                         ← bump 0.1.61
+updater.json                         ← remove windows, aponta v0.1.62
+sidecar/src/services/whisper.ts      ← batch_size fix, preprocess, music params
+CHECKPOINT.md                        ← atualizado
+SESSION.md                           ← este arquivo
+```
+
+**Patch instalado em produção:**
+```
+/tmp/whisper_patched.js →
+sudo cp /tmp/whisper_patched.js "/usr/lib/AI App Builder Studio/_up_/sidecar/dist/services/whisper.js"
+```
+
+## Pendências / Próximos passos
+1. Testar transcrição de música com o patch aplicado
+2. Bump para v0.1.62 + publicar release com whisper.ts corrigido bundlado
+3. Implementar fallback de provider (Groq 429 → Gemini)
 4. Preservar conteúdo de arquivos anexados no histórico
-5. Carregar mensagens do backend ao trocar de conversa
+5. Corrigir assinatura do updater (signature vazia no updater.json)

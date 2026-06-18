@@ -1,20 +1,21 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.61** — última atualização: `2026-06-18` (Linux-only, updater 404 fix)
+**v0.1.61** — última atualização: `2026-06-18` (Linux-only, updater fix, whisper music fix)
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)
 - Sidecar Node.js (Fastify) em `sidecar/`, roda em `http://localhost:3001`
 - Vite dev server em `http://localhost:1420`
 - RTK (Rust Token Killer) ativo via hook global
-- Instaladores: `.deb` (Linux) + NSIS (Windows) em `src-tauri/target/release/bundle/`
-- Chave de assinatura em `~/.tauri/ai-updater.key` (Linux) ou `~\.tauri\ai-updater.key` (Windows)
+- Instaladores: `.deb` Linux em `src-tauri/target/release/bundle/deb/`
+- Chave de assinatura em `~/.tauri/ai-updater.key`
 - Prisma + SQLite (`aibuilder.db`) no sidecar
 - App 100% API-based (Groq, Anthropic, OpenAI, Gemini, DeepSeek, Mistral, Cohere, OpenRouter)
-- Sidecar com log para `$TMPDIR/aibuilder-sidecar.log` (Linux) ou `%TEMP%\aibuilder-sidecar.log` (Windows)
-- Updater com log para `$TMPDIR/aibuilder-updater.log` (Linux) ou `%TEMP%\aibuilder-updater.log` (Windows)
+- Sidecar com log para `$TMPDIR/aibuilder-sidecar.log`
+- Updater com log para `$TMPDIR/aibuilder-updater.log`
 - **Plataforma**: Linux-only (bundle `deb`, sem suporte Windows)
+- **faster-whisper** instalado via `pip3 install faster-whisper --break-system-packages`
 
 ## O que foi implementado até v0.1.12
 
@@ -218,7 +219,10 @@ theme/   → useTheme
 | v0.1.51 | NSIS + MSI | Buildado (whisper: default tiny + auto-seleção + error diagnostics) |
 | v0.1.56 | .deb + NSIS | Buildado (Linux compatibility — sidecar, ffmpeg, Whisper CPU, updater) |
 | v0.1.57 | .deb + NSIS | Buildado (Linux CI/CD release, permissions fix, updater Linux) |
-| v0.1.58 | .deb | **Atual** (Linux full adaptation, transcription 500 fix, updater URL fix, TS shell compat) |
+| v0.1.58 | .deb | Publicado (Linux full adaptation, transcription 500 fix, updater URL fix) |
+| v0.1.59 | .deb | Publicado (updater URL validation, double error prefix fix) |
+| v0.1.60 | — | Buildado localmente (bump, não publicado) |
+| v0.1.61 | .deb | **Atual** (Linux-only, updater 404 fix, whisper batch_size fix, music preprocessing) |
 
 ### v0.1.45 — Whisper integrado + transcrição automática de áudio
 
@@ -360,6 +364,26 @@ theme/   → useTheme
 | require() em ESM | `transcribe-page.ts` — `require('fs')` → `await import('fs')` (**causa do HTTP 500**) |
 | Docs cross-platform | `audio-transcriber.md` — exemplos Windows + Linux, WHISPER_PYTHON sem path hardcoded |
 | Session/Checkpoint | CHECKPOINT.md + SESSION.md atualizados |
+
+### v0.1.61 — Linux-only + Updater 404 fix + Whisper music fix
+
+| O quê | Detalhes |
+|-------|----------|
+| **Updater Linux-only** | `updater.rs` reescrito sem código Windows (`#[cfg(windows)]` removido); usa `curl` + `pkexec dpkg/apt` |
+| **Updater sem fallback falso** | `check_github_release` retorna `None` quando nenhum asset `.deb` encontrado (antes construía URL fake → 404) |
+| **tauri.conf.json** | `targets: "all"` → `targets: ["deb"]`; nova pubkey de assinatura |
+| **updater.json** | Remove `windows-x86_64`; aponta para v0.1.62 |
+| **Bump versão** | `package.json`, `Cargo.toml`, `tauri.conf.json` → `0.1.61` |
+| **CI/CD** | Secrets `TAURI_SIGNING_PRIVATE_KEY` + `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` configurados; `.deb` publicado |
+| **faster-whisper instalado** | `pip3 install faster-whisper --break-system-packages` no sistema |
+| **Whisper batch_size removido** | `model.transcribe()` não aceita `batch_size` → removido do script Python e dos args |
+| **Whisper pré-processamento** | ffmpeg converte para mono 16kHz + highpass 80Hz + lowpass 8kHz + dynaudnorm antes de transcrever |
+| **Whisper idioma padrão** | `language='pt'` por padrão — evita alucinações em inglês em áudio português |
+| **Whisper condition_on_previous_text** | `False` por padrão — evita loops de alucinação em música |
+| **Whisper vad_filter** | `False` por padrão — não corta partes da letra como se fossem silêncio |
+| **Whisper pickModel por duração** | ≤3min→`medium`, 3-10min→`base`, >10min→`tiny` (antes era por tamanho de buffer, lógica invertida) |
+| **Whisper erro com detalhe** | Quando exit 1, mostra o erro JSON do stdout Python + log stderr |
+| **Patch direto** | `/usr/lib/AI App Builder Studio/_up_/sidecar/dist/services/whisper.js` patchado em `/tmp/whisper_patched.js` |
 
 ## Estratégia de Update
 - **Resource bundled**: `updater.json` aponta para PRÓXIMA versão
