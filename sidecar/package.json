@@ -1,6 +1,6 @@
 {
   "name": "ai-app-builder-sidecar",
-  "version": "0.1.38",
+  "version": "0.1.57",
   "private": true,
   "type": "module",
   "scripts": {
