@@ -40,8 +40,7 @@
       "../sidecar/dist/**/*",
       "../sidecar/node_modules/**/*",
       "../sidecar/prisma/**/*",
-      "../sidecar/package.json",
-      "resources/node/**/*"
+      "../sidecar/package.json"
     ]
   },
   "plugins": {
