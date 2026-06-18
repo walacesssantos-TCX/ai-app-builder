@@ -14,7 +14,7 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 static SIDECAR_PROCESS: Mutex<Option<Child>> = Mutex::new(None);
 
 /// Health check timeout: Prisma migration + module load can take 10-15s
-const SIDECAR_STARTUP_TIMEOUT_MS: u64 = 15_000;
+const SIDECAR_STARTUP_TIMEOUT_MS: u64 = 30_000;
 const SIDECAR_HEALTH_POLL_MS: u64 = 300;
 
 fn timestamp() -> String {
@@ -73,40 +73,60 @@ fn get_sidecar_dir() -> PathBuf {
             }
         }
     }
-    // Strategy 3: fallback to relative
-    PathBuf::from("sidecar")
-}
-
-fn get_node_executable() -> PathBuf {
-    if let Ok(cwd) = std::env::current_dir() {
-        let candidate = cwd.join("src-tauri").join("resources").join("node").join("node.exe");
-        if candidate.exists() {
-            return candidate;
-        }
-    }
-
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            for ancestor in parent.ancestors() {
-                let candidate = ancestor.join("_resources").join("node").join("node.exe");
-                if candidate.exists() {
+    // Strategy 3: Linux .deb — resources at ../lib/<appname>/_up_/sidecar/
+    if cfg!(target_os = "linux") {
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(parent) = exe.parent() {
+                let candidate = parent.join("..").join("lib").join("AI App Builder Studio").join("_up_").join("sidecar");
+                if candidate.join("dist/index.js").exists() {
                     return candidate;
-                }
-
-                let nsis = ancestor.join("_up_").join("node").join("node.exe");
-                if nsis.exists() {
-                    return nsis;
-                }
-
-                let bundled = ancestor.join("resources").join("node").join("node.exe");
-                if bundled.exists() {
-                    return bundled;
                 }
             }
         }
     }
+    // Strategy 4: fallback to relative
+    PathBuf::from("sidecar")
+}
 
-    PathBuf::from("node")
+fn get_node_executable() -> PathBuf {
+    #[cfg(not(windows))]
+    {
+        // On Linux, always use system node
+        return PathBuf::from("node");
+    }
+
+    #[cfg(windows)]
+    {
+        if let Ok(cwd) = std::env::current_dir() {
+            let candidate = cwd.join("src-tauri").join("resources").join("node").join("node.exe");
+            if candidate.exists() {
+                return candidate;
+            }
+        }
+
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(parent) = exe.parent() {
+                for ancestor in parent.ancestors() {
+                    let candidate = ancestor.join("_resources").join("node").join("node.exe");
+                    if candidate.exists() {
+                        return candidate;
+                    }
+
+                    let nsis = ancestor.join("_up_").join("node").join("node.exe");
+                    if nsis.exists() {
+                        return nsis;
+                    }
+
+                    let bundled = ancestor.join("resources").join("node").join("node.exe");
+                    if bundled.exists() {
+                        return bundled;
+                    }
+                }
+            }
+        }
+
+        PathBuf::from("node")
+    }
 }
 
 #[tauri::command]
@@ -134,12 +154,26 @@ pub fn start_sidecar() -> Result<(), String> {
     )
     .is_ok();
     if port_busy {
-        log_to_file("start_sidecar: port 3001 is in use — killing stale node processes");
+        log_to_file("start_sidecar: port 3001 is in use — killing stale processes");
+        #[cfg(windows)]
         let _ = Command::new("taskkill")
             .args(["/f", "/im", "node.exe"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn();
+        #[cfg(not(windows))]
+        {
+            let _ = Command::new("pkill")
+                .args(["-f", "node.*sidecar"])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn();
+            let _ = Command::new("pkill")
+                .args(["-f", "tsx.*index.ts"])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn();
+        }
         // Wait for port to be released
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
@@ -160,14 +194,25 @@ pub fn start_sidecar() -> Result<(), String> {
         node_exe.display()
     ));
 
-    let db_dir = if let Ok(app_data) = std::env::var("APPDATA") {
-        let mut p = PathBuf::from(app_data);
-        p.push("Fluxcodex");
-        p.push("aibuilder");
-        let _ = std::fs::create_dir_all(&p);
-        p
-    } else {
-        std::env::temp_dir()
+    let db_dir = {
+        let base = if cfg!(windows) {
+            std::env::var("APPDATA").ok()
+                .map(PathBuf::from)
+        } else {
+            std::env::var("XDG_DATA_HOME").ok()
+                .map(PathBuf::from)
+                .or_else(|| {
+                    std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".local").join("share"))
+                })
+        };
+        if let Some(mut p) = base {
+            p.push("Fluxcodex");
+            p.push("aibuilder");
+            let _ = std::fs::create_dir_all(&p);
+            p
+        } else {
+            std::env::temp_dir()
+        }
     };
     let db_dir_str = db_dir.to_string_lossy().replace("\\", "/");
     let db_url = format!("file:{}/aibuilder.db", db_dir_str);
@@ -191,6 +236,33 @@ pub fn start_sidecar() -> Result<(), String> {
     #[cfg(windows)]
     node_command.creation_flags(CREATE_NO_WINDOW);
 
+    // Pass critical env vars to the sidecar child process
+    fn set_sidecar_env(cmd: &mut Command, db_url: &str, sidecar_dir: &PathBuf) {
+        cmd.env("DATABASE_URL", db_url);
+        // Pass WHISPER_PYTHON if set in parent process
+        if let Ok(val) = std::env::var("WHISPER_PYTHON") {
+            cmd.env("WHISPER_PYTHON", val);
+        }
+        // Pass GROQ API keys if set in parent
+        for key in &["GROQ_API_KEY", "TOKEN_GROQ", "TOKEN_GROQ02"] {
+            if let Ok(val) = std::env::var(key) {
+                cmd.env(key, val);
+            }
+        }
+        // Pass other common API keys
+        for key in &["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
+                     "GEMINI_API_KEY", "DEEPSEEK_API_KEY", "MISTRAL_API_KEY", "COHERE_API_KEY"] {
+            if let Ok(val) = std::env::var(key) {
+                cmd.env(key, val);
+            }
+        }
+        // Set HOME so the sidecar finds the correct user config
+        if let Ok(home) = std::env::var("HOME") {
+            cmd.env("HOME", home);
+        }
+        cmd.current_dir(sidecar_dir);
+    }
+
     let child = if dist_path.exists() {
         let mut args = Vec::new();
         if env_path.exists() {
@@ -198,10 +270,9 @@ pub fn start_sidecar() -> Result<(), String> {
         }
         args.push(dist_path.to_string_lossy().to_string());
         log_to_file(&format!("Spawning: {} {}", node_exe.display(), args.join(" ")));
+        set_sidecar_env(&mut node_command, &db_url, &sidecar_dir);
         node_command
             .args(&args)
-            .current_dir(&sidecar_dir)
-            .env("DATABASE_URL", &db_url)
             .stdout(if let Some(ref f) = stderr_file {
                 Stdio::from(f.try_clone().unwrap())
             } else {
@@ -230,9 +301,9 @@ pub fn start_sidecar() -> Result<(), String> {
         #[cfg(windows)]
         npx_command.creation_flags(CREATE_NO_WINDOW);
 
+        set_sidecar_env(&mut npx_command, &db_url, &sidecar_dir);
         npx_command
             .args(&args)
-            .current_dir(&sidecar_dir)
             .stderr(if let Some(ref f) = stderr_file {
                 Stdio::from(f.try_clone().unwrap())
             } else {

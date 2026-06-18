@@ -1,7 +1,7 @@
 # AI App Builder Studio — CHECKPOINT
 
 ## Versão atual
-**v0.1.51** — última atualização: `2026-06-17T14:30:00Z`
+**v0.1.56** — última atualização: `2026-06-17T14:30:00Z`
 
 ## Setup
 - Tauri v2 + React 18 + TypeScript + Vite + Tailwind + Zustand (persist)

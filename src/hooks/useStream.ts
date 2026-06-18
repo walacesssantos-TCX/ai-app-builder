@@ -5,7 +5,9 @@ import { useSkillsStore } from '@/stores/skills.store'
 import type { FileAttachment } from '@/types'
 
 const SIDECAR_URL = 'http://127.0.0.1:3001'
-const OUTPUT_DIR = 'C:\\Users\\walace\\Music\\Fluxcodex'
+const OUTPUT_DIR = process.env.HOME
+  ? `${process.env.HOME}/Music/Fluxcodex`
+  : '/tmp/Fluxcodex-transcriptions'
 
 function genId(): string {
   try {
@@ -28,7 +30,7 @@ async function saveOutputFile(filename: string, content: string) {
   try {
     const { invoke } = await import('@tauri-apps/api/core')
     const baseName = filename.replace(/\.[^.]+$/, '')
-    const outPath = `${OUTPUT_DIR}\\${baseName}_transcription.txt`
+    const outPath = `${OUTPUT_DIR}/${baseName}_transcription.txt`
     await invoke('write_file', { path: outPath, content })
     console.log(`[useStream] Saved transcription to ${outPath}`)
   } catch {

@@ -5,7 +5,7 @@ import { join } from 'path'
 import { ensureFfmpegInPath, isFfmpegAvailable, getAudioDurationSeconds } from './ffmpeg.js'
 
 
-const PYTHON = process.env.WHISPER_PYTHON || 'C:\\Users\\walace\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe'
+const PYTHON = process.env.WHISPER_PYTHON || 'python3'
 
 const TRANSCRIBE_SCRIPT_SRC = `#!/usr/bin/env python3
 import argparse, json, sys, time
@@ -13,8 +13,8 @@ import argparse, json, sys, time
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', default='tiny')
-    parser.add_argument('--device', default='cuda')
-    parser.add_argument('--compute-type', default='float16')
+    parser.add_argument('--device', default='cpu')
+    parser.add_argument('--compute-type', default='int8')
     parser.add_argument('--audio-path', required=True)
     parser.add_argument('--language')
     parser.add_argument('--beam-size', type=int, default=5)
@@ -31,7 +31,7 @@ def main():
         print(f'[fw] Loading {args.model} on {args.device} ({args.compute_type})', file=sys.stderr)
         model = WhisperModel(args.model, device=args.device, compute_type=args.compute_type)
     except Exception as e:
-        print(f'[fw] GPU failed ({e}), fallback to CPU int8', file=sys.stderr)
+        print(f'[fw] CPU fallback: {e}', file=sys.stderr)
         model = WhisperModel(args.model, device='cpu', compute_type='int8')
 
     print(f'[fw] Transcribing {args.audio_path}...', file=sys.stderr)
@@ -99,10 +99,10 @@ const MODE_PRESETS: Record<Exclude<WhisperMode, 'auto'>, {
   computeType: string; beamSize: number; bestOf: number; temperature: number; batchSize: number
   initialPrompt: string | null
 }> = {
-  turbo: { computeType: 'float16', beamSize: 1, bestOf: 1, temperature: 0, batchSize: 16, initialPrompt: null },
-  balanced: { computeType: 'float16', beamSize: 3, bestOf: 3, temperature: 0, batchSize: 8, initialPrompt: null },
+  turbo: { computeType: 'int8', beamSize: 1, bestOf: 1, temperature: 0, batchSize: 16, initialPrompt: null },
+  balanced: { computeType: 'int8', beamSize: 3, bestOf: 3, temperature: 0, batchSize: 8, initialPrompt: null },
   precision: {
-    computeType: 'float16', beamSize: 5, bestOf: 5, temperature: 0.0, batchSize: 4,
+    computeType: 'int8', beamSize: 5, bestOf: 5, temperature: 0.0, batchSize: 4,
     initialPrompt: 'Abaixo está uma transcrição precisa em português, respeitando siglas, nomes próprios e pontuação.',
   },
 }
@@ -141,8 +141,7 @@ export async function transcribeBuffer(
 
   if (!isFfmpegAvailable()) {
     throw new Error(
-      'ffmpeg não encontrado. O instalador já inclui ffmpeg, mas ele não foi localizado. ' +
-      'Tente reinstalar o aplicativo ou instale manualmente: winget install ffmpeg'
+      'ffmpeg não encontrado. Instale com: sudo apt install ffmpeg'
     )
   }
 
