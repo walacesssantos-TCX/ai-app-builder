@@ -52,7 +52,7 @@ export function UpdateSection() {
       const localPath = await invoke<string>('install_update', { path: state.installerPath })
       setState({ status: 'downloaded', path: localPath })
     } catch (e) {
-      setState({ status: 'error', message: `Falha ao baixar: ${e}` })
+      setState({ status: 'error', message: String(e) })
     }
   }
 
@@ -64,7 +64,7 @@ export function UpdateSection() {
       // Installer was spawned with /S /RUN — it will auto-close the app
       // and launch the new version. No need to call relaunch().
     } catch (e) {
-      setState({ status: 'error', message: `Falha ao instalar: ${e}` })
+      setState({ status: 'error', message: String(e) })
     }
   }
 

@@ -167,6 +167,14 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
             resolve_installer_path(&entry.url)
         };
 
+        // Validate remote URL before reporting update available to avoid 404 on download
+        if installer_path.starts_with("http://") || installer_path.starts_with("https://") {
+            if !is_url_accessible(&installer_path) {
+                log_updater(&format!("Installer URL not accessible — skipping: {}", installer_path));
+                continue;
+            }
+        }
+
         return Ok(Some(LocalUpdateInfo {
             version: manifest.version,
             notes: manifest.notes.unwrap_or_default(),
@@ -175,6 +183,24 @@ pub fn check_local_update(app: AppHandle) -> Result<Option<LocalUpdateInfo>, Str
     }
 
     Ok(None)
+}
+
+fn is_url_accessible(url: &str) -> bool {
+    let client = reqwest::blocking::Client::builder()
+        .user_agent("ai-app-builder-updater")
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .timeout(std::time::Duration::from_secs(10))
+        .build();
+    match client {
+        Ok(c) => match c.head(url).send() {
+            Ok(resp) => {
+                let status = resp.status().as_u16();
+                status < 400
+            }
+            Err(_) => false,
+        },
+        Err(_) => false,
+    }
 }
 
 fn log_updater(msg: &str) {
